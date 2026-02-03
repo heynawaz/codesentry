@@ -13,13 +13,12 @@ export async function connectReposAction(repoIds: number[]) {
   return { ok: true, connected, failed };
 }
 
-export async function disconnectRepoAction(formData: FormData) {
+export async function disconnectRepoAction(formData: FormData): Promise<void> {
   const session = await auth();
-  if (!session?.user?.id) return { ok: false, error: "Unauthorized" };
+  if (!session?.user?.id) return;
   const repositoryId = formData.get("repositoryId");
-  if (typeof repositoryId !== "string") return { ok: false, error: "Bad request" };
+  if (typeof repositoryId !== "string") return;
   const { disconnectRepository } = await import("@/lib/repositories");
   await disconnectRepository(session.user.id, repositoryId);
   revalidatePath("/dashboard");
-  return { ok: true };
 }
