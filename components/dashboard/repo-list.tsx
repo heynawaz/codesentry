@@ -36,7 +36,11 @@ export function RepoList({ repos }: { repos: RepoWithCount[] }) {
               </TableCell>
               <TableCell className="text-right text-muted-foreground text-sm">{repo.lastScannedAt ? new Date(repo.lastScannedAt).toLocaleDateString() : "—"}</TableCell>
               <TableCell>
-                <form action={disconnectRepoAction}>
+                <form
+                  action={async (formData) => {
+                    await disconnectRepoAction(formData);
+                  }}
+                >
                   <input type="hidden" name="repositoryId" value={repo.id} />
                   <Button type="submit" variant="ghost" size="sm">
                     Disconnect
