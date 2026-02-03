@@ -31,22 +31,6 @@ export const authConfig: NextAuthConfig = {
     },
     async signIn({ user, account }) {
       if (account?.provider !== "github" || !user) return true;
-      // #region agent log
-      const hasId = !!(account as { providerAccountId?: string })?.providerAccountId;
-      const hasToken = !!(account as { access_token?: string })?.access_token;
-      fetch("http://127.0.0.1:7244/ingest/d04d72d8-da72-4238-a884-f8a92fd62073", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          location: "auth.config.ts:signIn",
-          message: "signIn callback entry",
-          data: { hasProviderAccountId: hasId, hasAccessToken: hasToken },
-          timestamp: Date.now(),
-          sessionId: "debug-session",
-          hypothesisId: "A",
-        }),
-      }).catch(() => {});
-      // #endregion
       try {
         await upsertUserAndGitHubAccount(
           {
@@ -57,49 +41,14 @@ export const authConfig: NextAuthConfig = {
           },
           account
         );
-        // #region agent log
-        fetch("http://127.0.0.1:7244/ingest/d04d72d8-da72-4238-a884-f8a92fd62073", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ location: "auth.config.ts:signIn", message: "upsert success", data: {}, timestamp: Date.now(), sessionId: "debug-session", hypothesisId: "A" }),
-        }).catch(() => {});
-        // #endregion
       } catch (e) {
-        // #region agent log
-        fetch("http://127.0.0.1:7244/ingest/d04d72d8-da72-4238-a884-f8a92fd62073", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            location: "auth.config.ts:signIn",
-            message: "upsert threw",
-            data: { errMsg: e instanceof Error ? e.message : String(e) },
-            timestamp: Date.now(),
-            sessionId: "debug-session",
-            hypothesisId: "A",
-          }),
-        }).catch(() => {});
-        // #endregion
         console.error("Failed to upsert user:", e);
         return false;
       }
       return true;
     },
     async jwt({ token, account }) {
-      // #region agent log
-      fetch("http://127.0.0.1:7244/ingest/d04d72d8-da72-4238-a884-f8a92fd62073", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          location: "auth.config.ts:jwt",
-          message: "jwt callback",
-          data: { tokenSub: token.sub ?? null, hasAccount: !!account },
-          timestamp: Date.now(),
-          sessionId: "debug-session",
-          hypothesisId: "B",
-        }),
-      }).catch(() => {});
-      // #endregion
-      // Set dbUserId from GitHubAccount. NextAuth sets token.sub to a UUID, not providerAccountId;
+      // NextAuth sets token.sub to a UUID, not providerAccountId;
       // use account.providerAccountId on first OAuth callback, else lookup by existing token.dbUserId.
       if (prisma?.gitHubAccount) {
         const lookupKey = account?.provider === "github" && (account as { providerAccountId?: string })?.providerAccountId ? String((account as { providerAccountId: string }).providerAccountId) : (token.dbUserId as string | undefined);
@@ -116,20 +65,6 @@ export const authConfig: NextAuthConfig = {
             ghAccount = await find();
           }
           if (ghAccount) token.dbUserId = ghAccount.userId;
-          // #region agent log
-          fetch("http://127.0.0.1:7244/ingest/d04d72d8-da72-4238-a884-f8a92fd62073", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              location: "auth.config.ts:jwt",
-              message: "jwt lookup result",
-              data: { found: !!ghAccount, dbUserIdPrefix: ghAccount?.userId?.slice(0, 6) ?? null },
-              timestamp: Date.now(),
-              sessionId: "debug-session",
-              hypothesisId: "B",
-            }),
-          }).catch(() => {});
-          // #endregion
         } catch {
           // DB may be unavailable; keep token without dbUserId
         }

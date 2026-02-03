@@ -8,44 +8,12 @@ type GitHubClient = {
 };
 
 async function getToken(userId: string): Promise<string> {
-  // #region agent log
-  fetch("http://127.0.0.1:7244/ingest/d04d72d8-da72-4238-a884-f8a92fd62073", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      location: "services/github.ts:getToken",
-      message: "getToken entry",
-      data: { userIdLength: userId?.length ?? 0, userIdPrefix: typeof userId === "string" ? userId.slice(0, 8) : "" },
-      timestamp: Date.now(),
-      sessionId: "debug-session",
-      hypothesisId: "B,C,E",
-    }),
-  }).catch(() => {});
-  // #endregion
-  // session.user.id may be DB User id (cuid) or GitHub id (token.sub)
+  // session.user.id may be DB User id (cuid) or GitHub id
   const account = await prisma.gitHubAccount.findFirst({
     where: {
       OR: [{ userId }, { githubUserId: userId }],
     },
   });
-  // #region agent log
-  fetch("http://127.0.0.1:7244/ingest/d04d72d8-da72-4238-a884-f8a92fd62073", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      location: "services/github.ts:getToken",
-      message: "getToken findFirst result",
-      data: {
-        found: !!account,
-        accountUserIdPrefix: account?.userId?.slice(0, 6) ?? null,
-        accountGithubUserId: account?.githubUserId ?? null,
-      },
-      timestamp: Date.now(),
-      sessionId: "debug-session",
-      hypothesisId: "B,D,E",
-    }),
-  }).catch(() => {});
-  // #endregion
   if (!account) throw new Error("GitHub account not linked");
   const token = decrypt(account.accessTokenEnc);
   if (!token?.trim()) throw new Error("GitHub token missing or invalid");

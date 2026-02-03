@@ -45,11 +45,13 @@ export default async function RepositoryPage({ params }: { params: Promise<{ id:
           ) : (
             <ul className="space-y-2">
               {repo.pullRequests.map((pr) => (
-                <li key={pr.id} className="flex items-center justify-between rounded border px-3 py-2">
-                  <span className="font-medium">
-                    #{pr.githubPrId} {pr.title}
-                  </span>
-                  <span className="text-muted-foreground text-sm">{pr.state}</span>
+                <li key={pr.id}>
+                  <Link href={`/dashboard/repositories/${repo.id}/pr/${pr.id}`} className="flex items-center justify-between rounded border px-3 py-2 transition-colors hover:bg-muted/50">
+                    <span className="font-medium">
+                      #{pr.githubPrId} {pr.title}
+                    </span>
+                    <span className="text-muted-foreground text-sm">{pr.state}</span>
+                  </Link>
                 </li>
               ))}
             </ul>

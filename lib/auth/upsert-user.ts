@@ -27,20 +27,6 @@ export async function upsertUserAndGitHubAccount(user: OAuthUser, account: Accou
   const username = profile.login ?? user.name ?? "unknown";
   const avatarUrl = profile.avatar_url ?? user.image ?? null;
   const accessToken = account.access_token;
-  // #region agent log
-  fetch("http://127.0.0.1:7244/ingest/d04d72d8-da72-4238-a884-f8a92fd62073", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      location: "lib/auth/upsert-user.ts:upsertUserAndGitHubAccount",
-      message: "upsert entry",
-      data: { githubUserId, hasAccessToken: !!(accessToken && typeof accessToken === "string") },
-      timestamp: Date.now(),
-      sessionId: "debug-session",
-      hypothesisId: "A",
-    }),
-  }).catch(() => {});
-  // #endregion
   if (!accessToken || typeof accessToken !== "string") {
     throw new Error("GitHub access token missing from OAuth response");
   }
@@ -115,19 +101,5 @@ export async function upsertUserAndGitHubAccount(user: OAuthUser, account: Accou
     });
   }
 
-  // #region agent log
-  fetch("http://127.0.0.1:7244/ingest/d04d72d8-da72-4238-a884-f8a92fd62073", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      location: "lib/auth/upsert-user.ts:upsertUserAndGitHubAccount",
-      message: "upsert exit",
-      data: { userIdPrefix: dbUser.id.slice(0, 8), githubUserId },
-      timestamp: Date.now(),
-      sessionId: "debug-session",
-      hypothesisId: "A,D",
-    }),
-  }).catch(() => {});
-  // #endregion
   return { userId: dbUser.id };
 }
