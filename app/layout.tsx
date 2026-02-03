@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "CodeSentry",
-  description: "CodeSentry is a platform for monitoring and analyzing code quality.",
+  description: "Analyze Pull Requests with AI",
 };
 
 export default function RootLayout({
