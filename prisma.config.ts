@@ -1,5 +1,10 @@
-import "dotenv/config";
-import { defineConfig } from "prisma/config";
+import path from "node:path";
+import { config } from "dotenv";
+
+// Load .env from project root so DIRECT_DATABASE_URL is available when running via bunx/npx
+config({ path: path.resolve(process.cwd(), ".env") });
+
+import { defineConfig, env } from "prisma/config";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -7,6 +12,7 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // CLI (migrate dev, db push) needs direct Postgres URL. Set DIRECT_DATABASE_URL in .env.
+    url: process.env["DIRECT_DATABASE_URL"] ?? env("DATABASE_URL"),
   },
 });

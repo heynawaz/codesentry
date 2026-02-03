@@ -1,0 +1,51 @@
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"8961b6ab-79c5-4cd1-a4bc-672720dc5e6d","hasAccount":false},"timestamp":1770135752038,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"8961b6ab-79c5-4cd1-a4bc-672720dc5e6d","hasAccount":false},"timestamp":1770135753246,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"8961b6ab-79c5-4cd1-a4bc-672720dc5e6d","hasAccount":false},"timestamp":1770135753259,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"8961b6ab-79c5-4cd1-a4bc-672720dc5e6d","hasAccount":false},"timestamp":1770135755053,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"8961b6ab-79c5-4cd1-a4bc-672720dc5e6d","hasAccount":false},"timestamp":1770135755158,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"8961b6ab-79c5-4cd1-a4bc-672720dc5e6d","hasAccount":false},"timestamp":1770135755160,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"8961b6ab-79c5-4cd1-a4bc-672720dc5e6d","hasAccount":false},"timestamp":1770135762958,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"8961b6ab-79c5-4cd1-a4bc-672720dc5e6d","hasAccount":false},"timestamp":1770135763007,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"8961b6ab-79c5-4cd1-a4bc-672720dc5e6d","hasAccount":false},"timestamp":1770135763009,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:signIn","message":"signIn callback entry","data":{"hasProviderAccountId":true,"hasAccessToken":true},"timestamp":1770135771236,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"lib/auth/upsert-user.ts:upsertUserAndGitHubAccount","message":"upsert entry","data":{"githubUserId":"71560545","hasAccessToken":true},"timestamp":1770135771237,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"lib/auth/upsert-user.ts:upsertUserAndGitHubAccount","message":"upsert exit","data":{"userIdPrefix":"cml6sf9a","githubUserId":"71560545"},"timestamp":1770135771736,"sessionId":"debug-session","hypothesisId":"A,D"}
+{"location":"auth.config.ts:signIn","message":"upsert success","data":{},"timestamp":1770135771737,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":true},"timestamp":1770135771740,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135771874,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":false},"timestamp":1770135771895,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135771991,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":false},"timestamp":1770135772000,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135772089,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":false},"timestamp":1770135772126,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":false},"timestamp":1770135772129,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135772208,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135772218,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":false},"timestamp":1770135776404,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135776588,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":false},"timestamp":1770135776611,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135776711,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"app/actions/github.ts:getReposForConnect","message":"getReposForConnect entry","data":{"hasSession":true,"userIdLength":25,"userIdPrefix":"cml6"},"timestamp":1770135776712,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"services/github.ts:getToken","message":"getToken entry","data":{"userIdLength":25,"userIdPrefix":"cml6sf9a"},"timestamp":1770135776712,"sessionId":"debug-session","hypothesisId":"B,C,E"}
+{"location":"services/github.ts:getToken","message":"getToken findFirst result","data":{"found":true,"accountUserIdPrefix":"cml6sf","accountGithubUserId":"71560545"},"timestamp":1770135776812,"sessionId":"debug-session","hypothesisId":"B,D,E"}
+{"location":"app/actions/github.ts:getReposForConnect","message":"getReposForConnect success","data":{"repoCount":19},"timestamp":1770135777704,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":false},"timestamp":1770135811745,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135812349,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":false},"timestamp":1770135812374,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135812448,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"services/github.ts:getToken","message":"getToken entry","data":{"userIdLength":25,"userIdPrefix":"cml6sf9a"},"timestamp":1770135812454,"sessionId":"debug-session","hypothesisId":"B,C,E"}
+{"location":"services/github.ts:getToken","message":"getToken findFirst result","data":{"found":true,"accountUserIdPrefix":"cml6sf","accountGithubUserId":"71560545"},"timestamp":1770135812537,"sessionId":"debug-session","hypothesisId":"B,D,E"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":false},"timestamp":1770135814989,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":false},"timestamp":1770135814994,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135815073,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135815673,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":false},"timestamp":1770135829114,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135829642,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":false},"timestamp":1770135833613,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135833741,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":false},"timestamp":1770135833767,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135833852,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":false},"timestamp":1770135835698,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135835837,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt callback","data":{"tokenSub":"48d64297-bbd0-4801-957b-f97d28409cde","hasAccount":false},"timestamp":1770135836867,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"auth.config.ts:jwt","message":"jwt lookup result","data":{"found":true,"dbUserIdPrefix":"cml6sf"},"timestamp":1770135836974,"sessionId":"debug-session","hypothesisId":"B"}

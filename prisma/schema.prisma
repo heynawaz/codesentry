@@ -1,14 +1,180 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// AI Code Review Assistant - Prisma schema
+// Generator outputs to lib for clear separation from app routes.
 
 generator client {
-  provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// User & Auth
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime? // soft delete
+
+  githubAccounts GitHubAccount[]
+  repositories   UserRepository[]
+  subscription   Subscription?
+
+  @@index([email])
+  @@index([deletedAt])
+}
+
+model GitHubAccount {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  githubUserId      String   // GitHub's numeric user id
+  username          String   // GitHub login
+  avatarUrl         String?
+  accessTokenEnc    String   // Encrypted GitHub OAuth access token
+  refreshTokenEnc   String?  // Encrypted refresh token if provided
+  tokenExpiresAt    DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([githubUserId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Repositories & PRs
+// ---------------------------------------------------------------------------
+
+model Repository {
+  id              String   @id @default(cuid())
+  githubRepoId    Int      // GitHub node id or repo id
+  fullName        String   // e.g. "owner/repo"
+  name            String?
+  defaultBranch   String?  @default("main")
+  lastScannedAt   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  userRepos   UserRepository[]
+  pullRequests PullRequest[]
+
+  @@unique([githubRepoId])
+  @@index([fullName])
+  @@index([deletedAt])
+}
+
+model UserRepository {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repositoryId String
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  connectedAt  DateTime   @default(now())
+
+  @@unique([userId, repositoryId])
+  @@index([userId])
+  @@index([repositoryId])
+}
+
+model PullRequest {
+  id           String   @id @default(cuid())
+  repositoryId String
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  githubPrId   Int      // GitHub PR number
+  title        String
+  author       String?
+  authorAvatar String?
+  state        String   // OPEN, CLOSED, etc.
+  diffUrl      String?  // URL to fetch diff or compare
+  headRef      String?
+  baseRef      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  codeReviews CodeReview[]
+
+  @@unique([repositoryId, githubPrId])
+  @@index([repositoryId])
+  @@index([state])
+}
+
+// ---------------------------------------------------------------------------
+// AI Review Results
+// ---------------------------------------------------------------------------
+
+model CodeReview {
+  id             String   @id @default(cuid())
+  pullRequestId  String
+  pullRequest    PullRequest @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+  qualityScore   Int      // 0-100
+  summary        String?  @db.Text
+  rawResponse    String?  @db.Text // Full AI response for debugging
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  issues CodeReviewIssue[]
+}
+
+model CodeReviewIssue {
+  id           String     @id @default(cuid())
+  codeReviewId String
+  codeReview   CodeReview @relation(fields: [codeReviewId], references: [id], onDelete: Cascade)
+  kind         String     // "security" | "improvement"
+  title        String
+  description  String?    @db.Text
+  severity     String?    // low, medium, high, critical
+  filePath     String?
+  lineStart    Int?
+  lineEnd      Int?
+  snippet      String?    @db.Text
+  createdAt    DateTime   @default(now())
+
+  @@index([codeReviewId])
+}
+
+// ---------------------------------------------------------------------------
+// Billing
+// ---------------------------------------------------------------------------
+
+enum SubscriptionPlanId {
+  free
+  pro
+  team
+}
+
+model SubscriptionPlan {
+  id          SubscriptionPlanId @id @default(free)
+  name        String
+  description String?  @db.Text
+  priceCents  Int      @default(0)
+  reposLimit  Int      @default(1)
+  reviewsPerMonth Int? // null = unlimited
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId    SubscriptionPlanId @default(free)
+  plan      SubscriptionPlan @relation(fields: [planId], references: [id])
+  stripeCustomerId String?
+  stripeSubscriptionId String?
+  currentPeriodEnd DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
