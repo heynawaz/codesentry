@@ -1,6 +1,5 @@
 import { auth } from "@/auth";
-import { Navbar } from "@/components/navbar";
-import { DashboardSidebar } from "@/components/dashboard/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
 import { redirect } from "next/navigation";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -8,11 +7,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!session?.user) redirect("/sign-in");
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <Navbar user={session.user} />
-      <div className="flex flex-1">
-        <DashboardSidebar />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+    <div className="flex min-h-screen flex-col bg-background">
+      <div className="flex flex-1 overflow-hidden">
+        <AppSidebar user={session.user} />
+        <main className="flex-1 overflow-auto px-6 py-6 min-w-0">{children}</main>
       </div>
     </div>
   );

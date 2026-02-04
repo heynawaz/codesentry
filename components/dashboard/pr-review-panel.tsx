@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, CheckCircle2, Lightbulb, Shield } from "lucide-react";
+import { motion } from "framer-motion";
 
 type Issue = {
   id: string;
@@ -36,7 +37,7 @@ function IssueRow({ issue, onJumpToFile }: { issue: Issue; onJumpToFile?: (path:
   const severityColor = issue.severity === "critical" ? "text-red-600 dark:text-red-400" : issue.severity === "high" ? "text-orange-600 dark:text-orange-400" : issue.severity === "medium" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground";
 
   return (
-    <div className="rounded-md border border-border bg-card p-3 text-sm">
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="rounded-lg border border-border bg-card p-3 text-sm shadow-sm">
       <div className="flex items-start gap-2">
         <Icon className={cn("mt-0.5 size-4 shrink-0", isSecurity ? "text-red-500" : "text-amber-500")} />
         <div className="min-w-0 flex-1">
@@ -44,7 +45,7 @@ function IssueRow({ issue, onJumpToFile }: { issue: Issue; onJumpToFile?: (path:
           {issue.severity && <span className={cn("text-xs", severityColor)}>{issue.severity}</span>}
           {issue.description && <p className="mt-1 text-muted-foreground">{issue.description}</p>}
           {(issue.filePath || issue.lineStart != null) && (
-            <button type="button" onClick={() => onJumpToFile?.(issue.filePath ?? "", issue.lineStart ?? undefined)} className="mt-2 text-xs text-primary hover:underline">
+            <button type="button" onClick={() => onJumpToFile?.(issue.filePath ?? "", issue.lineStart ?? undefined)} className="mt-2 cursor-pointer text-xs text-primary hover:underline">
               {issue.filePath}
               {issue.lineStart != null && `:${issue.lineStart}`}
             </button>
@@ -52,7 +53,7 @@ function IssueRow({ issue, onJumpToFile }: { issue: Issue; onJumpToFile?: (path:
           {issue.snippet && <pre className="mt-2 overflow-x-auto rounded bg-muted px-2 py-1 text-xs">{issue.snippet}</pre>}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

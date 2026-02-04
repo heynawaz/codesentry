@@ -2,15 +2,13 @@ import { auth } from "@/auth";
 import { getConnectedRepositories, hasLinkedGitHubAccount } from "@/lib/repositories";
 import { ConnectReposButton } from "@/components/dashboard/connect-repos-button";
 import { RepoList } from "@/components/dashboard/repo-list";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { Separator } from "@/components/ui/separator";
 import { AlertCircle, FolderGit2 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-export default async function DashboardPage() {
+export default async function RepositoriesPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/sign-in");
 
@@ -18,7 +16,7 @@ export default async function DashboardPage() {
   const isEmpty = repos.length === 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {!hasLinked && (
         <Alert variant="destructive" className="rounded-xl">
           <AlertCircle className="h-4 w-4" />
@@ -31,29 +29,22 @@ export default async function DashboardPage() {
           </AlertDescription>
         </Alert>
       )}
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Connected Repositories</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Manage GitHub repos for AI-powered pull request reviews</p>
-        </div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold tracking-tight">Connected Repositories</h1>
         <ConnectReposButton />
       </div>
 
       {isEmpty ? (
-        <Card className="rounded-xl border border-dashed overflow-hidden">
-          <CardContent className="p-0">
-            <Empty className="border-0 rounded-xl min-h-[280px]">
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <FolderGit2 />
-                </EmptyMedia>
-                <EmptyTitle>No repositories connected</EmptyTitle>
-                <EmptyDescription>Connect a GitHub repository to start receiving AI-powered pull request reviews.</EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent>
-                <ConnectReposButton variant="default" className="rounded-lg" />
-              </EmptyContent>
-            </Empty>
+        <Card className="rounded-xl border border-dashed">
+          <CardHeader>
+            <div className="flex size-12 items-center justify-center rounded-lg bg-muted">
+              <FolderGit2 className="size-6 text-muted-foreground" />
+            </div>
+            <CardTitle>No repositories connected</CardTitle>
+            <CardDescription>Connect a GitHub repository to start receiving AI-powered pull request reviews.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ConnectReposButton variant="default" />
           </CardContent>
         </Card>
       ) : (

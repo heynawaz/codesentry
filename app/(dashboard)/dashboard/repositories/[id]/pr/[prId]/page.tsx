@@ -46,7 +46,7 @@ export default async function PRDetailPage({ params }: { params: Promise<{ id: s
   const latestReview = pr.codeReviews[0] ?? null;
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <PRHeader
         repositoryId={repositoryId}
         repoFullName={repo.fullName}
@@ -66,6 +66,7 @@ export default async function PRDetailPage({ params }: { params: Promise<{ id: s
       <PRDetailTabs
         repoFullName={repo.fullName}
         githubPrId={pr.githubPrId}
+        headRef={pr.headRef}
         parsedFiles={parsedFiles}
         latestReview={
           latestReview

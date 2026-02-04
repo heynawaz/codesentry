@@ -20,3 +20,22 @@ export async function getReposForConnect(): Promise<GetReposResult> {
     return { ok: false, error: "fetch_failed", message };
   }
 }
+
+export type GetFileContentResult = { ok: true; content: string } | { ok: false; error: string };
+
+export async function getFileContentAction(repoFullName: string, path: string, ref: string): Promise<GetFileContentResult> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Unauthorized" };
+  if (!ref?.trim()) return { ok: false, error: "No ref provided" };
+  const [owner, repo] = repoFullName.split("/");
+  if (!owner || !repo) return { ok: false, error: "Invalid repo" };
+  try {
+    const content = await github.getFileContent(session.user.id, owner, repo, path, ref);
+    if (content === null) return { ok: false, error: "File not found or not a file" };
+    return { ok: true, content };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Failed to load file";
+    console.error("[getFileContentAction]", e);
+    return { ok: false, error: message };
+  }
+}

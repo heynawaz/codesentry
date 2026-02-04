@@ -85,3 +85,17 @@ export async function getPullRequestDiff(userId: string, owner: string, repo: st
   if (!res.ok) throw new Error(`Failed to fetch diff: ${res.status}`);
   return res.text();
 }
+
+/** Fetch raw file content at the given ref (branch or sha). Returns null if not a file or not found. */
+export async function getFileContent(userId: string, owner: string, repo: string, path: string, ref: string): Promise<string | null> {
+  const client = await getClient(userId);
+  const encodedPath = path.split("/").map(encodeURIComponent).join("/");
+  const data = await client.get<{ type: string; content?: string; encoding?: string }>(
+    `/repos/${owner}/${repo}/contents/${encodedPath}?ref=${encodeURIComponent(ref)}`
+  );
+  if (data.type !== "file" || !data.content) return null;
+  if (data.encoding === "base64") {
+    return Buffer.from(data.content, "base64").toString("utf-8");
+  }
+  return data.content;
+}

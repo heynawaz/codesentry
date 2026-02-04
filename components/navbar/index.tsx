@@ -1,17 +1,20 @@
+"use client";
+
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/navbar/user-menu";
 import { Shield } from "lucide-react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import type { User } from "next-auth";
 
 export function Navbar({ user }: { user: User }) {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <motion.header initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }} className="sticky top-0 z-50 w-full border-b border-border bg-background/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="flex h-14 items-center gap-4 px-4 lg:px-6">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <div className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Shield className="size-3.5" />
-          </div>
+        <Link href="/" className="flex cursor-pointer items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-90">
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }} className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+            <Shield className="size-4" />
+          </motion.div>
           <span className="hidden sm:inline-block">CodeSentry</span>
         </Link>
         <div className="flex-1" />
@@ -20,6 +23,6 @@ export function Navbar({ user }: { user: User }) {
           <UserMenu user={user} />
         </nav>
       </div>
-    </header>
+    </motion.header>
   );
 }
