@@ -11,10 +11,11 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useCallback, useState } from "react";
+import { cn } from "@/lib/utils";
 
 type Repo = { id: number; full_name: string; name: string; private: boolean };
 
-export function ConnectReposButton({ variant = "outline" }: { variant?: "default" | "outline" | "ghost" | "link" | "destructive" | "secondary" }) {
+export function ConnectReposButton({ variant = "outline", className }: { variant?: "default" | "outline" | "ghost" | "link" | "destructive" | "secondary"; className?: string }) {
   const [open, setOpen] = useState(false);
   const [repos, setRepos] = useState<Repo[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -68,7 +69,7 @@ export function ConnectReposButton({ variant = "outline" }: { variant?: "default
   return (
     <Dialog open={open} onOpenChange={(v) => (v ? onOpen() : setOpen(v))}>
       <DialogTrigger asChild>
-        <Button variant={variant} className="rounded-lg">
+        <Button variant={variant} className={cn("rounded-lg", className)}>
           Connect GitHub Repository
         </Button>
       </DialogTrigger>
