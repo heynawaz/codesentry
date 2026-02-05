@@ -1,6 +1,6 @@
 import { auth, signIn } from "@/auth";
 import { SignInButton } from "@/components/layout/auth/sign-in-button";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { ArrowRight, FileCode2, MessageSquare, Shield, Sparkles } from "lucide-react";
 import { redirect } from "next/navigation";
 

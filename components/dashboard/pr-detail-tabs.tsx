@@ -1,13 +1,37 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PRDiffFileTree } from "@/components/dashboard/pr-diff-file-tree";
-import { PRDiffViewer } from "@/components/dashboard/pr-diff-viewer";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { PRDiffFileTree, type ChangeTypeFilter } from "@/components/dashboard/pr-diff-file-tree";
 import { PRReviewPanel } from "@/components/dashboard/pr-review-panel";
-import type { ParsedFile } from "@/lib/diff-parser";
+import { Spinner } from "@/components/ui/spinner";
+import type { ParsedFile } from "@/lib/diff";
+
+function filterFilesByChangeType(files: ParsedFile[], changeType: ChangeTypeFilter): ParsedFile[] {
+  if (changeType === "all") return files;
+  return files.filter((f) => {
+    const added = f.hunks.reduce((a, h) => a + h.lines.filter((l) => l.type === "add").length, 0);
+    const removed = f.hunks.reduce((a, h) => a + h.lines.filter((l) => l.type === "del").length, 0);
+    if (changeType === "added") return added > 0 && removed === 0;
+    if (changeType === "modified") return added > 0 && removed > 0;
+    if (changeType === "deleted") return added === 0 && removed > 0;
+    return true;
+  });
+}
+
+const PRDiffViewer = dynamic(() => import("@/components/dashboard/pr-diff-viewer").then((m) => ({ default: m.PRDiffViewer })), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-muted-foreground">
+      <Spinner className="size-8" />
+      <span className="text-sm font-medium">Loading diff…</span>
+    </div>
+  ),
+});
 
 type Issue = {
   id: string;
@@ -40,6 +64,16 @@ export function PRDetailTabs({ repoFullName, githubPrId, headRef, parsedFiles, l
   const [activeTab, setActiveTab] = useState("files");
   const [scrollToFilePath, setScrollToFilePath] = useState<string | null>(null);
   const [scrollToLine, setScrollToLine] = useState<number | null>(null);
+  const [changeType, setChangeType] = useState<ChangeTypeFilter>("all");
+
+  const filteredFiles = useMemo(
+    () => filterFilesByChangeType(parsedFiles, changeType),
+    [parsedFiles, changeType]
+  );
+
+  const pathSet = useMemo(() => new Set(filteredFiles.map((f) => f.path)), [filteredFiles]);
+  const effectivePath =
+    scrollToFilePath && pathSet.has(scrollToFilePath) ? scrollToFilePath : filteredFiles[0]?.path ?? null;
 
   const onJumpToFile = useCallback((path: string, line?: number) => {
     setScrollToFilePath(path || null);
@@ -67,19 +101,28 @@ export function PRDetailTabs({ repoFullName, githubPrId, headRef, parsedFiles, l
         </div>
         <TabsContent value="files" className="mt-4 w-full min-w-0">
           <AnimatePresence mode="wait">
-            <motion.div key="files" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }} className="flex h-[70vh] w-full min-w-0 overflow-hidden rounded-xl border border-border bg-background shadow-sm">
-              <PRDiffFileTree
-                files={parsedFiles}
-                selectedPath={scrollToFilePath}
-                onSelectFile={(path) => {
-                  setScrollToFilePath(path);
-                  setScrollToLine(null);
-                }}
-                className="h-full w-64 shrink-0"
-              />
-              <div className="min-h-0 min-w-0 flex-1 border-l border-border overflow-hidden">
-                <PRDiffViewer files={parsedFiles} repoFullName={repoFullName} headRef={headRef} className="h-full w-full" scrollToFilePath={scrollToFilePath} scrollToLine={scrollToLine} />
-              </div>
+            <motion.div key="files" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }} className="h-[calc(100vh-15rem)] w-full min-w-0 overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+              <ResizablePanelGroup direction="horizontal" className="h-full w-full">
+                <ResizablePanel defaultSize={22} minSize={16} maxSize={45} className="min-w-0">
+                  <PRDiffFileTree
+                    files={filteredFiles}
+                    selectedPath={effectivePath}
+                    onSelectFile={(path) => {
+                      setScrollToFilePath(path);
+                      setScrollToLine(null);
+                    }}
+                    changeType={changeType}
+                    onChangeType={setChangeType}
+                    className="h-full w-full"
+                  />
+                </ResizablePanel>
+                <ResizableHandle withHandle className="shrink-0" />
+                <ResizablePanel defaultSize={78} minSize={50} className="min-w-0">
+                  <div className="h-full w-full overflow-hidden">
+                    <PRDiffViewer files={filteredFiles} repoFullName={repoFullName} headRef={headRef} className="h-full w-full" scrollToFilePath={effectivePath} scrollToLine={scrollToLine} />
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
             </motion.div>
           </AnimatePresence>
         </TabsContent>

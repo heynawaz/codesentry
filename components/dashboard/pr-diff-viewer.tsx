@@ -3,49 +3,110 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ChevronDown, ChevronRight, MessageSquare, MoreVertical, ArrowUp, Copy, Code, Expand, Minus } from "lucide-react";
-import { FileIcon } from "@/lib/file-icon";
-import { useState, useEffect, useCallback } from "react";
+import { FileIcon } from "@/components/ui/file-icon";
+import { useState, useEffect, useCallback, memo, useMemo } from "react";
 import { useTheme } from "next-themes";
-import { motion } from "framer-motion";
-import { Highlight } from "prism-react-renderer";
-import type { ParsedFile } from "@/lib/diff-parser";
-import { getLanguageFromPath } from "@/lib/syntax-highlight";
-import { prismDiffDark, prismDiffLight } from "@/lib/prism-diff-theme";
+import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
+import githubGist from "react-syntax-highlighter/dist/esm/styles/hljs/github-gist";
+import atomOneDark from "react-syntax-highlighter/dist/esm/styles/hljs/atom-one-dark";
+
+const githubGistStyle = {
+  ...githubGist,
+  hljs: { ...githubGist.hljs, background: "transparent" },
+  "hljs-meta-keyword": { color: "#d73a49" },
+  "hljs-meta-string": { color: "#032f62" },
+  "hljs-symbol": { color: "#0086b3" },
+  "hljs-tag": { color: "#22863a" },
+  "hljs-name": { color: "#6f42c1" },
+  "hljs-attr": { color: "#005cc5" },
+};
+
+const atomOneDarkStyle = {
+  ...atomOneDark,
+  hljs: { ...atomOneDark.hljs, background: "transparent" },
+  "hljs-meta-keyword": { color: "#c678dd" },
+  "hljs-tag": { color: "#e6c07b" },
+  "hljs-name": { color: "#e06c75" },
+  "hljs-attr": { color: "#d19a66" },
+};
+import { getLanguageFromPath, type ParsedFile } from "@/lib/diff";
 import { cn } from "@/lib/utils";
 
-// Load Prism and register languages (prism-setup sets global Prism before language components load)
-import "@/lib/prism-languages";
-import { Prism } from "@/lib/prism-setup";
+// Register languages so the Light (lowlight) build can highlight them.
+// Register xml first so typescript/javascript JSX sublanguages resolve.
+import xml from "react-syntax-highlighter/dist/esm/languages/hljs/xml";
+import typescript from "react-syntax-highlighter/dist/esm/languages/hljs/typescript";
+import javascript from "react-syntax-highlighter/dist/esm/languages/hljs/javascript";
+import css from "react-syntax-highlighter/dist/esm/languages/hljs/css";
+import scss from "react-syntax-highlighter/dist/esm/languages/hljs/scss";
+import json from "react-syntax-highlighter/dist/esm/languages/hljs/json";
+import markdown from "react-syntax-highlighter/dist/esm/languages/hljs/markdown";
+import yaml from "react-syntax-highlighter/dist/esm/languages/hljs/yaml";
+import bash from "react-syntax-highlighter/dist/esm/languages/hljs/bash";
+import python from "react-syntax-highlighter/dist/esm/languages/hljs/python";
+import ruby from "react-syntax-highlighter/dist/esm/languages/hljs/ruby";
+import go from "react-syntax-highlighter/dist/esm/languages/hljs/go";
+import rust from "react-syntax-highlighter/dist/esm/languages/hljs/rust";
+import java from "react-syntax-highlighter/dist/esm/languages/hljs/java";
+import cpp from "react-syntax-highlighter/dist/esm/languages/hljs/cpp";
+import c from "react-syntax-highlighter/dist/esm/languages/hljs/c";
+import sql from "react-syntax-highlighter/dist/esm/languages/hljs/sql";
+
+const registerLang = (SyntaxHighlighter as unknown as { registerLanguage: (name: string, lang: unknown) => void }).registerLanguage;
+registerLang("xml", xml);
+registerLang("markup", xml);
+registerLang("typescript", typescript);
+registerLang("tsx", typescript);
+registerLang("javascript", javascript);
+registerLang("jsx", javascript);
+registerLang("css", css);
+registerLang("scss", scss);
+registerLang("json", json);
+registerLang("markdown", markdown);
+registerLang("yaml", yaml);
+registerLang("bash", bash);
+registerLang("python", python);
+registerLang("ruby", ruby);
+registerLang("go", go);
+registerLang("rust", rust);
+registerLang("java", java);
+registerLang("cpp", cpp);
+registerLang("c", c);
+registerLang("sql", sql);
+
+const SUPPORTED_LANGUAGES = new Set(["typescript", "tsx", "javascript", "jsx", "css", "scss", "json", "markdown", "yaml", "bash", "python", "ruby", "go", "rust", "java", "cpp", "c", "sql", "html", "xml", "markup"]);
 
 function safeId(path: string): string {
   return path.replace(/\//g, "-").replace(/[^a-zA-Z0-9-_]/g, "_");
 }
 
-/** Renders a single line of code with optional syntax highlighting and preserved indentation. */
-function DiffLineContent({ content, language, theme, className }: { content: string; language: string; theme: "light" | "dark"; className?: string }) {
+/** Renders a single line of code with syntax highlighting (GitHub-style in light, Atom One Dark in dark). */
+const DiffLineContent = memo(function DiffLineContent({ content, language, theme, className }: { content: string; language: string; theme: "light" | "dark"; className?: string }) {
   const code = content || " ";
-  const lang = language && Prism.languages[language] ? language : "plain";
+  let lang = language && SUPPORTED_LANGUAGES.has(language) ? language : "plain";
 
   if (lang === "plain") {
     return <span className={cn("whitespace-pre", className)}>{code}</span>;
   }
 
-  const prismTheme = theme === "dark" ? prismDiffDark : prismDiffLight;
+  // Use XML grammar for lines that are clearly JSX/HTML so tags and attributes get highlighted
+  const trimmed = code.trim();
+  if ((lang === "tsx" || lang === "jsx") && (trimmed.startsWith("<") || trimmed.startsWith("</"))) {
+    lang = "xml";
+  }
+
+  const style = theme === "dark" ? atomOneDarkStyle : githubGistStyle;
   return (
-    <Highlight prism={Prism} code={code} language={lang} theme={prismTheme}>
-      {({ tokens, getTokenProps }) => (
-        <span className={cn("whitespace-pre", className)}>
-          {(tokens[0] ?? []).map((token, i) => {
-            const { key: tokenKey, ...tokenProps } = getTokenProps({ token, key: i });
-            return <span key={(tokenKey as React.Key) ?? i} {...tokenProps} />;
-          })}
-        </span>
-      )}
-    </Highlight>
+    <span className={cn("diff-line-code", className)}>
+      <SyntaxHighlighter language={lang} style={style} useInlineStyles={true} PreTag="span" codeTagProps={{ className: "whitespace-pre", style: { background: "transparent", padding: 0 } }} customStyle={{ background: "transparent", padding: 0, margin: 0, fontSize: "inherit" }} showLineNumbers={false} wrapLongLines className="!m-0 !p-0 inline border-0">
+        {code}
+      </SyntaxHighlighter>
+    </span>
   );
-}
+});
 
 type PRDiffViewerProps = {
   files: ParsedFile[];
@@ -56,22 +117,40 @@ type PRDiffViewerProps = {
   scrollToLine?: number | null;
 };
 
-function DiffLine({ line, showOld, showNew, lineId, highlighted, language, resolvedTheme }: { line: ParsedFile["hunks"][0]["lines"][0]; showOld: boolean; showNew: boolean; lineId?: string; highlighted?: boolean; language: string; resolvedTheme: "light" | "dark" }) {
-  const bg = line.type === "add" ? "bg-emerald-500/10 dark:bg-emerald-500/10" : line.type === "del" ? "bg-red-500/10 dark:bg-red-500/10" : "";
+/** Single diff line – GitHub PR style: left column red for deletions, right column green for additions, syntax-highlighted code. */
+const DiffLine = memo(function DiffLine({ line, showOld, showNew, lineId, highlighted, language, resolvedTheme }: { line: ParsedFile["hunks"][0]["lines"][0]; showOld: boolean; showNew: boolean; lineId?: string; highlighted?: boolean; language: string; resolvedTheme: "light" | "dark" }) {
+  const isAdd = line.type === "add";
+  const isDel = line.type === "del";
+  const rowBg = isAdd ? "bg-[var(--diff-add-bg)]" : isDel ? "bg-[var(--diff-del-bg)]" : "";
+  const oldNumBg = isDel ? "bg-[var(--diff-del-num-bg)]" : "";
+  const newNumBg = isAdd ? "bg-[var(--diff-add-num-bg)]" : "";
+  const oldNumFg = isDel ? "text-[var(--diff-del-fg)]" : "text-muted-foreground";
+  const newNumFg = isAdd ? "text-[var(--diff-add-fg)]" : "text-muted-foreground";
+  const signFg = isAdd ? "text-[var(--diff-add-fg)]" : isDel ? "text-[var(--diff-del-fg)]" : "text-muted-foreground";
   return (
-    <div id={lineId} className={cn("flex w-full min-w-min font-mono text-xs leading-relaxed py-0.5", line.type === "add" && "text-emerald-700 dark:text-emerald-400", line.type === "del" && "text-red-700 dark:text-red-400", highlighted && "ring-inset ring-2 ring-primary/50 bg-primary/10", bg)}>
-      <span className="flex w-12 shrink-0 justify-end pr-3 text-muted-foreground tabular-nums select-none">{showOld ? line.oldLineNumber ?? "" : ""}</span>
-      <span className="flex w-12 shrink-0 justify-end pr-3 text-muted-foreground tabular-nums select-none border-r border-border">{showNew ? line.newLineNumber ?? "" : ""}</span>
-      <span className="w-4 shrink-0 pr-2 text-muted-foreground select-none">{line.type === "add" ? "+" : line.type === "del" ? "-" : " "}</span>
-      <span className="min-w-min shrink-0 overflow-visible">
+    <div id={lineId} className={cn("flex w-full min-w-min font-mono text-xs leading-relaxed py-0", rowBg, highlighted && "ring-inset ring-2 ring-primary/50 bg-primary/10")}>
+      <span className={cn("flex w-12 shrink-0 justify-end pr-3 tabular-nums select-none border-r border-border/50", oldNumBg, oldNumFg)}>{showOld ? (line.oldLineNumber ?? "") : ""}</span>
+      <span className={cn("flex w-12 shrink-0 justify-end pr-3 tabular-nums select-none border-r border-border/50", newNumBg, newNumFg)}>{showNew ? (line.newLineNumber ?? "") : ""}</span>
+      <span className={cn("w-4 shrink-0 pr-2 select-none", signFg)}>{isAdd ? "+" : isDel ? "-" : " "}</span>
+      <span className="min-w-0 flex-1 overflow-x-auto text-foreground">
         <DiffLineContent content={line.content} language={language} theme={resolvedTheme} />
       </span>
     </div>
   );
-}
+});
 
 function FileBlock({ file, scrollToLine, scrollToFilePath, repoFullName, headRef }: { file: ParsedFile; scrollToLine?: number | null; scrollToFilePath?: string | null; repoFullName?: string | null; headRef?: string | null }) {
   const { resolvedTheme } = useTheme();
+
+  // Theme for syntax highlighter: init from DOM so light/dark is correct on first paint and when expanding files
+  const [effectiveTheme, setEffectiveTheme] = useState<"light" | "dark">(() => {
+    if (typeof document === "undefined") return "light";
+    return document.documentElement.classList.contains("dark") ? "dark" : "light";
+  });
+  useEffect(() => {
+    if (resolvedTheme === "dark" || resolvedTheme === "light") setEffectiveTheme(resolvedTheme);
+  }, [resolvedTheme]);
+
   const isTargetFile = scrollToFilePath != null && (file.path === scrollToFilePath || file.path.endsWith(scrollToFilePath) || scrollToFilePath.endsWith(file.path));
   const [open, setOpen] = useState(true);
   const [viewed, setViewed] = useState(false);
@@ -79,7 +158,7 @@ function FileBlock({ file, scrollToLine, scrollToFilePath, repoFullName, headRef
   const [fullFileContent, setFullFileContent] = useState<string | null>(null);
   const [fullFileLoading, setFullFileLoading] = useState(false);
   const [fullFileError, setFullFileError] = useState<string | null>(null);
-  const theme = (resolvedTheme === "dark" ? "dark" : "light") as "light" | "dark";
+  const theme = effectiveTheme;
 
   useEffect(() => {
     if (!isTargetFile) return;
@@ -118,38 +197,43 @@ function FileBlock({ file, scrollToLine, scrollToFilePath, repoFullName, headRef
     }
   }, [showFullView, canExpandFull, fullFileContent, fullFileLoading, fullFileError, fetchFullFile]);
 
-  const added = file.hunks.reduce((a, h) => a + h.lines.filter((l) => l.type === "add").length, 0);
-  const removed = file.hunks.reduce((a, h) => a + h.lines.filter((l) => l.type === "del").length, 0);
+  const { added, removed, addedLineNumbers } = useMemo(() => {
+    let a = 0;
+    let r = 0;
+    const addedNums = new Set<number>();
+    for (const h of file.hunks) {
+      for (const l of h.lines) {
+        if (l.type === "add") {
+          a++;
+          if (l.newLineNumber != null) addedNums.add(l.newLineNumber);
+        } else if (l.type === "del") r++;
+      }
+    }
+    return { added: a, removed: r, addedLineNumbers: addedNums };
+  }, [file.hunks]);
+
   const fileId = `diff-file-${safeId(file.path)}`;
 
-  // Line numbers (in new file) that are additions — for full-file view diff highlighting
-  const addedLineNumbers = new Set(
-    file.hunks.flatMap((h) =>
-      h.lines
-        .filter((l) => l.type === "add")
-        .map((l) => l.newLineNumber)
-        .filter((n): n is number => n != null)
-    )
-  );
+  const fullFileLines = useMemo(() => fullFileContent?.split(/\r?\n/) ?? [], [fullFileContent]);
 
-  const copyPath = () => {
+  const language = useMemo(() => getLanguageFromPath(file.path), [file.path]);
+
+  const copyPath = useCallback(() => {
     void navigator.clipboard.writeText(file.path);
-  };
-
-  const fullFileLines = fullFileContent?.split(/\r?\n/) ?? [];
+  }, [file.path]);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }} className="min-w-0">
+    <div className="min-w-0">
       <Collapsible open={open} onOpenChange={setOpen} className="min-w-0 rounded-lg" id={fileId}>
-        <div className="sticky top-0 z-10 flex items-center border-border bg-card border-b">
+        <div className="sticky top-0 z-10 flex items-center border-border bg-card">
           <CollapsibleTrigger className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-sm font-medium hover:bg-muted/50 transition-colors">
             {open ? <ChevronDown className="size-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="size-4 shrink-0 text-muted-foreground" />}
             <FileIcon path={file.path} />
             <span className="min-w-0 truncate">{file.path}</span>
             {file.oldPath && file.oldPath !== file.path && <span className="shrink-0 text-muted-foreground text-xs">← {file.oldPath}</span>}
           </CollapsibleTrigger>
-          <span className="shrink-0 text-sm text-emerald-600 dark:text-emerald-400 font-medium">+{added}</span>
-          <span className="shrink-0 text-sm text-red-600 dark:text-red-400 font-medium px-1">-{removed}</span>
+          <span className="shrink-0 text-sm font-medium text-[var(--diff-add-fg)]">+{added}</span>
+          <span className="shrink-0 text-sm font-medium px-1 text-[var(--diff-del-fg)]">-{removed}</span>
           <div className="flex shrink-0 items-center gap-0.5 pr-2">
             {canExpandFull && (
               <Button
@@ -190,17 +274,18 @@ function FileBlock({ file, scrollToLine, scrollToFilePath, repoFullName, headRef
           </div>
         </div>
         <CollapsibleContent>
-          <div className="border-t border-border bg-background overflow-x-auto min-w-0">
+          <div className="border-t border-border bg-background overflow-x-auto min-w-0" data-diff-viewer>
             {showFullView ? (
-              <div className="min-h-[120px] bg-muted/20">
+              <div className="min-h-[120px]">
                 {fullFileLoading && (
-                  <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
-                    <span className="animate-pulse">Loading full file…</span>
+                  <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
+                    <Spinner className="size-8" />
+                    <span className="text-sm font-medium">Loading full file…</span>
                   </div>
                 )}
                 {fullFileError && !fullFileLoading && <div className="px-4 py-4 text-sm text-destructive">{fullFileError}</div>}
                 {!fullFileLoading && !fullFileError && fullFileLines.length > 0 && (
-                  <div className="diff-full-file" data-language={getLanguageFromPath(file.path)}>
+                  <div className="diff-full-file" data-language={language}>
                     {fullFileLines.map((content, i) => {
                       const lineNum = i + 1;
                       const lineId = `diff-line-${safeId(file.path)}-${lineNum}`;
@@ -212,40 +297,37 @@ function FileBlock({ file, scrollToLine, scrollToFilePath, repoFullName, headRef
                         newLineNumber: lineNum,
                       };
                       const highlighted = isTargetFile && scrollToLine != null && lineNum === scrollToLine;
-                      return <DiffLine key={lineNum} line={syntheticLine} showOld showNew lineId={lineId} highlighted={highlighted} language={getLanguageFromPath(file.path)} resolvedTheme={theme} />;
+                      return <DiffLine key={lineNum} line={syntheticLine} showOld showNew lineId={lineId} highlighted={highlighted} language={language} resolvedTheme={theme} />;
                     })}
                   </div>
                 )}
               </div>
             ) : (
-              file.hunks.map((hunk, hi) => {
-                const linesToShow = hunk.lines.filter((l) => l.type === "add" || l.type === "del");
-                return (
-                  <div key={hi} className="border-b border-border last:border-b-0">
-                    <div className="flex items-center gap-2 bg-primary/5 dark:bg-primary/10 px-3 py-1.5 font-mono text-xs text-muted-foreground border-b border-border/50">
-                      <Button variant="ghost" size="icon" className="size-6 rounded shrink-0" aria-label="Previous change">
-                        <ArrowUp className="size-3.5" />
-                      </Button>
-                      <span>
-                        @@ -{hunk.oldStart},{hunk.oldLines} +{hunk.newStart},{hunk.newLines} @@
-                      </span>
-                    </div>
-                    <div>
-                      {linesToShow.map((line, li) => {
-                        const lineNum = line.newLineNumber ?? line.oldLineNumber ?? li;
-                        const lineId = `diff-line-${safeId(file.path)}-${lineNum}`;
-                        const highlighted = isTargetFile && scrollToLine != null && lineNum === scrollToLine;
-                        return <DiffLine key={`${hi}-${li}`} line={line} showOld={line.type !== "add"} showNew={line.type !== "del"} lineId={lineId} highlighted={highlighted} language={getLanguageFromPath(file.path)} resolvedTheme={theme} />;
-                      })}
-                    </div>
+              file.hunks.map((hunk, hi) => (
+                <div key={hi} className="border-b border-border last:border-b-0">
+                  <div className="flex items-center gap-2 px-3 py-1.5 font-mono text-xs text-muted-foreground border-b bg-[var(--diff-hunk-bg)] border-[var(--diff-hunk-border)]">
+                    <Button variant="ghost" size="icon" className="size-6 rounded shrink-0" aria-label="Previous change">
+                      <ArrowUp className="size-3.5" />
+                    </Button>
+                    <span>
+                      @@ -{hunk.oldStart},{hunk.oldLines} +{hunk.newStart},{hunk.newLines} @@
+                    </span>
                   </div>
-                );
-              })
+                  <div>
+                    {hunk.lines.map((line, li) => {
+                      const lineNum = line.newLineNumber ?? line.oldLineNumber ?? li;
+                      const lineId = `diff-line-${safeId(file.path)}-${lineNum}`;
+                      const highlighted = isTargetFile && scrollToLine != null && lineNum === scrollToLine;
+                      return <DiffLine key={`${hi}-${li}`} line={line} showOld={line.type !== "add"} showNew={line.type !== "del"} lineId={lineId} highlighted={highlighted} language={language} resolvedTheme={theme} />;
+                    })}
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </CollapsibleContent>
       </Collapsible>
-    </motion.div>
+    </div>
   );
 }
 
@@ -277,8 +359,8 @@ export function PRDiffViewer({ files, repoFullName = null, headRef = null, class
   }
 
   return (
-    <div className={cn("h-full w-full overflow-y-auto overflow-x-hidden min-w-0", className)}>
-      <div className="min-w-0 min-h-full space-y-1 p-2">
+    <div className={cn("h-full w-full overflow-auto min-w-0", className)}>
+      <div className="min-w-0 min-h-full space-y-1">
         {files.map((file, i) => (
           <FileBlock key={`${file.path}-${i}`} file={file} scrollToFilePath={scrollToFilePath} scrollToLine={scrollToLine} repoFullName={repoFullName} headRef={headRef} />
         ))}

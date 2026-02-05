@@ -3,34 +3,61 @@
 ## Folder structure
 
 ```
-app/
-  (auth)/           # Sign-in (public)
-  (dashboard)/      # Authenticated app
-    dashboard/      # Routes: /dashboard, /dashboard/reviews, usage, billing, settings
-    repositories/[id]/
-  (user)/           # Root redirect (→ /dashboard)
-  actions/          # Server actions (repositories, github, sync, etc.)
+app/                    # Next.js App Router (routes, layouts, loading)
+  (auth)/               # Sign-in (public)
+  (dashboard)/          # Authenticated app
+    dashboard/          # Routes: /dashboard, /dashboard/repositories, etc.
+    layout.tsx
+  (user)/               # Root redirect (→ /dashboard)
+  actions/              # Server actions (github, pulls, repositories, reviews, sync)
+  actions.ts            # Root actions (e.g. signOut)
   api/
-    auth/           # NextAuth
-    reviews/        # POST: trigger AI review for a PR
-lib/
-  auth/             # upsert-user (persist User + GitHubAccount after OAuth)
-  crypto/            # Token encryption (GitHub access token)
-  db/
-    client.ts        # Prisma client singleton (import from @/lib/db/client)
-  generated/prisma/  # Generated Prisma client (output of prisma generate)
-  repositories.ts    # Connect/disconnect repos, get connected repos
-  reviews.ts         # Create review (call AI service, persist)
-  utils.ts
-services/
-  github.ts          # GitHub API: list repos, list PRs, get PR diff
-  ai-review.ts       # AI review stub (TODO: replace with OpenAI/LLM)
+    auth/               # NextAuth [...nextauth]
+    reviews/            # POST: trigger AI review for a PR
+  globals.css
+  layout.tsx
+
 components/
-  dashboard/         # Sidebar, ConnectReposButton, RepoList, SyncPrsButton
+  layout/               # App shell: sidebar, theme
+    app-sidebar.tsx
+    theme-provider.tsx
+    theme-toggle.tsx
+    auth/               # Sign-in form, sign-in button
+    dashboard/          # Legacy dashboard layout (if used)
+  dashboard/            # Feature: repos, PR diff, connect/sync
+    connect-repos-button.tsx
+    pr-detail-tabs.tsx
+    pr-diff-file-tree.tsx
+    pr-diff-viewer.tsx
+    pr-header.tsx
+    pr-review-panel.tsx
+    repo-list.tsx
+    sync-prs-button.tsx
   navbar/
+  ui/                   # Design system primitives + file-icon, page-loading
+
+lib/
+  auth/                 # upsert-user (persist User + GitHubAccount after OAuth)
+  crypto/               # Token encryption (GitHub access token)
+  db/
+    client.ts           # Prisma client (import @/lib/db/client)
+  diff/                 # Diff parsing + syntax highlighting
+    parser.ts           # parseUnifiedDiff, ParsedFile, DiffHunk, DiffLine
+    syntax-highlight.ts # getLanguageFromPath
+    index.ts            # Barrel export
+  repositories.ts       # Connect/disconnect repos, get connected repos
+  reviews.ts            # Create review (call AI service, persist)
+  sync-prs.ts
+  utils.ts
+
+services/               # External APIs and business logic
+  github.ts             # GitHub API: list repos, PRs, get diff
+  ai-review.ts          # AI review (TODO: replace with real LLM)
+
+types/                  # Global .d.ts (next-auth, react-syntax-highlighter)
 prisma/
   schema.prisma
-  seed.ts            # Subscription plans (free, pro, team)
+  seed.ts
 ```
 
 ## Authentication flow

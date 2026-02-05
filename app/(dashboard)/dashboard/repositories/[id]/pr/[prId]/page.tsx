@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/client";
 import { getPullRequestDiff } from "@/services/github";
-import { parseUnifiedDiff, type ParsedFile } from "@/lib/diff-parser";
+import { parseUnifiedDiff, type ParsedFile } from "@/lib/diff";
 import { notFound } from "next/navigation";
 import { PRHeader } from "@/components/dashboard/pr-header";
 import { PRDetailTabs } from "@/components/dashboard/pr-detail-tabs";

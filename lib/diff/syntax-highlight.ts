@@ -1,10 +1,10 @@
 /**
- * Map file path/extension to Prism language alias.
- * Used for diff viewer syntax highlighting.
+ * Map file path/extension to language alias for syntax highlighting.
+ * Used by react-syntax-highlighter in the diff viewer.
  */
 const EXT_TO_LANG: Record<string, string> = {
   ts: "typescript",
-  tsx: "typescript", // Prism uses typescript for TSX
+  tsx: "tsx",
   js: "javascript",
   jsx: "jsx",
   mjs: "javascript",

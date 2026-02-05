@@ -1,13 +1,21 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { ChevronDown, ChevronRight, Folder, FolderOpen, Search, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, ChevronRight, Folder, FolderOpen, Search, SlidersHorizontal, FilePlus, FileMinus, FileEdit } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { FileIcon } from "@/lib/file-icon";
+import { FileIcon } from "@/components/ui/file-icon";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { ParsedFile } from "@/lib/diff-parser";
+import type { ParsedFile } from "@/lib/diff";
 
 type FileEntry = { path: string; added: number; removed: number };
 
@@ -55,10 +63,14 @@ function folderHasMatchingDescendant(node: TreeNode, filter: string, folderPath:
   return folderChildrenArray(node).some((c) => folderHasMatchingDescendant(c, filter, expKey));
 }
 
+export type ChangeTypeFilter = "all" | "added" | "modified" | "deleted";
+
 type PRDiffFileTreeProps = {
   files: ParsedFile[];
   selectedPath: string | null;
   onSelectFile: (path: string) => void;
+  changeType: ChangeTypeFilter;
+  onChangeType: (value: ChangeTypeFilter) => void;
   className?: string;
 };
 
@@ -106,8 +118,11 @@ function TreeFolder({
   const childrenArr = folderChildrenArray(node);
   const filteredChildren = filter
     ? childrenArr.filter((c) => {
-        const path = c.type === "file" ? c.path : `${expKey}/${c.name}`;
-        return path.toLowerCase().includes(filter.toLowerCase());
+        if (c.type === "file") return c.path.toLowerCase().includes(filter.toLowerCase());
+        const childPath = `${expKey}/${c.name}`;
+        const pathMatches = childPath.toLowerCase().includes(filter.toLowerCase());
+        const hasMatchingDescendant = folderHasMatchingDescendant(c, filter, childPath);
+        return pathMatches || hasMatchingDescendant;
       })
     : childrenArr;
   if (filteredChildren.length === 0) return null;
@@ -121,7 +136,7 @@ function TreeFolder({
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >
         {isExpanded ? <ChevronDown className="size-4 shrink-0" /> : <ChevronRight className="size-4 shrink-0" />}
-        {isExpanded ? <FolderOpen className="size-4 shrink-0 text-blue-500" /> : <Folder className="size-4 shrink-0 text-blue-500" />}
+        {isExpanded ? <FolderOpen className="size-4 shrink-0 text-muted-foreground" /> : <Folder className="size-4 shrink-0 text-muted-foreground" />}
         <span className="min-w-0 truncate">{node.name}</span>
       </button>
       {isExpanded && (
@@ -145,7 +160,7 @@ function TreeFolder({
   );
 }
 
-export function PRDiffFileTree({ files, selectedPath, onSelectFile, className }: PRDiffFileTreeProps) {
+export function PRDiffFileTree({ files, selectedPath, onSelectFile, changeType, onChangeType, className }: PRDiffFileTreeProps) {
   const [filter, setFilter] = useState("");
   const [expanded, setExpandedState] = useState<Set<string>>(() => new Set());
 
@@ -158,6 +173,7 @@ export function PRDiffFileTree({ files, selectedPath, onSelectFile, className }:
       })),
     [files]
   );
+
   const tree = useMemo(() => buildTree(entries), [entries]);
 
   useEffect(() => {
@@ -172,9 +188,20 @@ export function PRDiffFileTree({ files, selectedPath, onSelectFile, className }:
           next.add(parts.slice(0, i + 1).join("/"));
         }
       }
+      if (filter.trim()) {
+        entries.forEach((e) => {
+          if (e.path.toLowerCase().includes(filter.toLowerCase())) {
+            const parts = e.path.split("/");
+            for (let i = 0; i < parts.length - 1; i++) {
+              next.add(parts.slice(0, i + 1).join("/"));
+            }
+          }
+        });
+      }
       return next;
     });
-  }, [tree, selectedPath]);
+    // Keep deps fixed-size: tree changes when entries change, so we don't list entries
+  }, [tree, selectedPath, filter]);
 
   const setExpanded = (key: string, open: boolean) => {
     setExpandedState((prev) => {
@@ -194,16 +221,46 @@ export function PRDiffFileTree({ files, selectedPath, onSelectFile, className }:
   return (
     <div className={cn("flex flex-col border-r border-border bg-muted/30", className)}>
       <div className="flex items-center gap-1 border-b border-border p-2">
-        <Search className="size-4 shrink-0 text-muted-foreground" />
-        <Input
-          placeholder="Filter files..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="h-8 flex-1 rounded-md border-border bg-background text-sm"
-        />
-        <Button variant="ghost" size="icon" className="size-8 shrink-0" aria-label="Filter options">
-          <SlidersHorizontal className="size-4" />
-        </Button>
+        <div className="relative flex-1 flex items-center">
+          <Search className="pointer-events-none absolute left-2.5 size-4 shrink-0 text-muted-foreground" />
+          <Input
+            placeholder="Filter files..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="h-8 w-full rounded-md border-border bg-background pl-8 pr-2 text-sm"
+          />
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="size-8 shrink-0" aria-label="Filter by change type">
+              <SlidersHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel>Show files</DropdownMenuLabel>
+            <DropdownMenuRadioGroup value={changeType} onValueChange={(v) => onChangeType(v as ChangeTypeFilter)}>
+              <DropdownMenuRadioItem value="all">All files</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="added">
+                <span className="flex items-center gap-2">
+                  <FilePlus className="size-4 text-emerald-600 dark:text-emerald-400" />
+                  Added only
+                </span>
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="modified">
+                <span className="flex items-center gap-2">
+                  <FileEdit className="size-4 text-amber-600 dark:text-amber-400" />
+                  Modified only
+                </span>
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="deleted">
+                <span className="flex items-center gap-2">
+                  <FileMinus className="size-4 text-red-600 dark:text-red-400" />
+                  Deleted only
+                </span>
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <ScrollArea className="flex-1 min-h-0">
         <div className="p-2">
