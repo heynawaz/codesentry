@@ -82,7 +82,7 @@ export function ReviewScoresChart({
               width={100}
             />
             <ChartTooltip content={<ChartTooltipContent hideLabel formatter={(v) => [`${v}/100`, "Score"]} />} />
-            <Bar dataKey="score" radius={[0, 4]} maxBarSize={28} minPointSize={4}>
+            <Bar dataKey="score" radius={4} maxBarSize={28} minPointSize={4}>
               {data.map((entry, index) => (
                 <Cell key={index} fill={entry.fill as string} />
               ))}
