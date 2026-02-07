@@ -5,7 +5,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ChevronDown, ChevronRight, MessageSquare, MoreVertical, ArrowUp, Copy, Code, Expand, Minus } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { InlineAIPanel } from "@/components/dashboard/review";
+import { ChevronDown, ChevronRight, MessageSquare, MoreVertical, ArrowUp, Copy, Code, Expand, Minus, AlertCircle } from "lucide-react";
 import { FileIcon } from "@/components/ui/file-icon";
 import { useState, useEffect, useCallback, memo, useMemo } from "react";
 import { useTheme } from "next-themes";
@@ -34,6 +37,7 @@ const atomOneDarkStyle = {
 };
 import { getLanguageFromPath, type ParsedFile } from "@/lib/diff";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // Register languages so the Light (lowlight) build can highlight them.
 // Register xml first so typescript/javascript JSX sublanguages resolve.
@@ -83,6 +87,16 @@ function safeId(path: string): string {
   return path.replace(/\//g, "-").replace(/[^a-zA-Z0-9-_]/g, "_");
 }
 
+/** Issue from AI review to show on a specific line. */
+export type DiffReviewIssue = {
+  kind: string;
+  category?: string | null;
+  severity: string | null;
+  title: string;
+  description?: string | null;
+  suggestion?: string | null;
+};
+
 /** Renders a single line of code with syntax highlighting (GitHub-style in light, Atom One Dark in dark). */
 const DiffLineContent = memo(function DiffLineContent({ content, language, theme, className }: { content: string; language: string; theme: "light" | "dark"; className?: string }) {
   const code = content || " ";
@@ -115,10 +129,44 @@ type PRDiffViewerProps = {
   className?: string;
   scrollToFilePath?: string | null;
   scrollToLine?: number | null;
+  reviewIssues?: ReviewIssueForDiff[] | null;
+  expandedLineKey?: string | null;
+  onExpandedLineChange?: (key: string | null) => void;
 };
 
-/** Single diff line – GitHub PR style: left column red for deletions, right column green for additions, syntax-highlighted code. */
-const DiffLine = memo(function DiffLine({ line, showOld, showNew, lineId, highlighted, language, resolvedTheme }: { line: ParsedFile["hunks"][0]["lines"][0]; showOld: boolean; showNew: boolean; lineId?: string; highlighted?: boolean; language: string; resolvedTheme: "light" | "dark" }) {
+/** Severity border color: high=red, medium=amber, low=muted. */
+function issueBorderClass(severity: string | null): string {
+  if (severity === "high" || severity === "critical") return "border-l-4 border-l-red-500 dark:border-l-red-400";
+  if (severity === "medium") return "border-l-4 border-l-amber-500 dark:border-l-amber-400";
+  return "border-l-4 border-l-muted-foreground/50";
+}
+
+/** Single diff line – GitHub PR style. Optional review-issue marker; click opens InlineAIPanel in Popover. */
+const DiffLine = memo(function DiffLine({
+  line,
+  showOld,
+  showNew,
+  lineId,
+  highlighted,
+  language,
+  resolvedTheme,
+  lineIssues,
+  lineKey,
+  isExpanded,
+  onExpandedChange,
+}: {
+  line: ParsedFile["hunks"][0]["lines"][0];
+  showOld: boolean;
+  showNew: boolean;
+  lineId?: string;
+  highlighted?: boolean;
+  language: string;
+  resolvedTheme: "light" | "dark";
+  lineIssues?: DiffReviewIssue[];
+  lineKey?: string;
+  isExpanded?: boolean;
+  onExpandedChange?: (open: boolean) => void;
+}) {
   const isAdd = line.type === "add";
   const isDel = line.type === "del";
   const rowBg = isAdd ? "bg-[var(--diff-add-bg)]" : isDel ? "bg-[var(--diff-del-bg)]" : "";
@@ -127,8 +175,25 @@ const DiffLine = memo(function DiffLine({ line, showOld, showNew, lineId, highli
   const oldNumFg = isDel ? "text-[var(--diff-del-fg)]" : "text-muted-foreground";
   const newNumFg = isAdd ? "text-[var(--diff-add-fg)]" : "text-muted-foreground";
   const signFg = isAdd ? "text-[var(--diff-add-fg)]" : isDel ? "text-[var(--diff-del-fg)]" : "text-muted-foreground";
-  return (
-    <div id={lineId} className={cn("flex w-full min-w-min font-mono text-xs leading-relaxed py-0", rowBg, highlighted && "ring-inset ring-2 ring-primary/50 bg-primary/10")}>
+  const hasIssues = lineIssues && lineIssues.length > 0;
+  const worstSeverity = hasIssues ? lineIssues.reduce((s, i) => (i.severity === "high" || i.severity === "critical" ? i.severity : s), null as string | null) : null;
+
+  const lineEl = (
+    <div
+      id={lineId}
+      className={cn(
+        "flex w-full min-w-min font-mono text-xs leading-relaxed py-0",
+        rowBg,
+        highlighted && "ring-inset ring-2 ring-primary/50 bg-primary/10",
+        hasIssues && issueBorderClass(worstSeverity ?? lineIssues![0]!.severity),
+        hasIssues && lineKey && "cursor-pointer hover:opacity-90"
+      )}
+    >
+      {hasIssues && (
+        <span className="flex shrink-0 items-center pl-1 pr-1.5 text-amber-600 dark:text-amber-400" title="AI review issue">
+          <AlertCircle className="size-3.5" aria-hidden />
+        </span>
+      )}
       <span className={cn("flex w-12 shrink-0 justify-end pr-3 tabular-nums select-none border-r border-border/50", oldNumBg, oldNumFg)}>{showOld ? (line.oldLineNumber ?? "") : ""}</span>
       <span className={cn("flex w-12 shrink-0 justify-end pr-3 tabular-nums select-none border-r border-border/50", newNumBg, newNumFg)}>{showNew ? (line.newLineNumber ?? "") : ""}</span>
       <span className={cn("w-4 shrink-0 pr-2 select-none", signFg)}>{isAdd ? "+" : isDel ? "-" : " "}</span>
@@ -137,9 +202,87 @@ const DiffLine = memo(function DiffLine({ line, showOld, showNew, lineId, highli
       </span>
     </div>
   );
+
+  if (hasIssues && lineKey) {
+    return (
+      <Popover open={isExpanded} onOpenChange={onExpandedChange}>
+        <PopoverTrigger asChild>{lineEl}</PopoverTrigger>
+        <PopoverContent side="left" className="w-80 p-0" align="start">
+          <InlineAIPanel issues={lineIssues!.map((i) => ({ kind: i.kind, category: i.category, severity: i.severity, title: i.title, description: i.description, suggestion: i.suggestion }))} />
+        </PopoverContent>
+      </Popover>
+    );
+  }
+  if (hasIssues) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{lineEl}</TooltipTrigger>
+        <TooltipContent side="left" className="max-w-sm text-xs font-normal" sideOffset={8}>
+          <div className="space-y-2">
+            {lineIssues!.map((issue, idx) => (
+              <div key={idx}>
+                <p className="font-semibold text-foreground">{issue.title}</p>
+                {issue.description && <p className="text-muted-foreground mt-0.5">{issue.description}</p>}
+                {issue.suggestion && <p className="mt-1 text-primary">Suggestion: {issue.suggestion}</p>}
+                <span className="text-muted-foreground capitalize">{issue.kind}</span>
+                {issue.severity && <span className="ml-1 text-muted-foreground">· {issue.severity}</span>}
+              </div>
+            ))}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+  return lineEl;
 });
 
-function FileBlock({ file, scrollToLine, scrollToFilePath, repoFullName, headRef }: { file: ParsedFile; scrollToLine?: number | null; scrollToFilePath?: string | null; repoFullName?: string | null; headRef?: string | null }) {
+/** Review issue with file/line for matching to diff lines. */
+export type ReviewIssueForDiff = {
+  filePath: string | null;
+  lineStart: number | null;
+  lineEnd: number | null;
+  kind: string;
+  category?: string | null;
+  severity: string | null;
+  title: string;
+  description?: string | null;
+  suggestion?: string | null;
+};
+
+function filePathMatches(filePath: string, issuePath: string | null): boolean {
+  if (!issuePath?.trim()) return false;
+  const a = filePath.trim();
+  const b = issuePath.trim();
+  return a === b || a.endsWith("/" + b) || b.endsWith("/" + a);
+}
+
+function issueAppliesToLine(issue: ReviewIssueForDiff, lineNum: number): boolean {
+  const start = issue.lineStart;
+  if (start == null) return false;
+  const end = issue.lineEnd;
+  if (end == null || end === start) return lineNum === start;
+  return lineNum >= start && lineNum <= end;
+}
+
+function FileBlock({
+  file,
+  scrollToLine,
+  scrollToFilePath,
+  repoFullName,
+  headRef,
+  reviewIssuesForFile,
+  expandedLineKey,
+  onExpandedLineChange,
+}: {
+  file: ParsedFile;
+  scrollToLine?: number | null;
+  scrollToFilePath?: string | null;
+  repoFullName?: string | null;
+  headRef?: string | null;
+  reviewIssuesForFile?: ReviewIssueForDiff[];
+  expandedLineKey?: string | null;
+  onExpandedLineChange?: (key: string | null) => void;
+}) {
   const { resolvedTheme } = useTheme();
 
   // Theme for syntax highlighter: init from DOM so light/dark is correct on first paint and when expanding files
@@ -170,7 +313,8 @@ function FileBlock({ file, scrollToLine, scrollToFilePath, repoFullName, headRef
 
   const fetchFullFile = useCallback(async () => {
     if (!repoFullName?.trim() || !headRef?.trim()) {
-      setFullFileError("Branch not available");
+      toast.error("Branch not available. Showing changes only.");
+      setShowFullView(false);
       return;
     }
     setFullFileLoading(true);
@@ -178,10 +322,17 @@ function FileBlock({ file, scrollToLine, scrollToFilePath, repoFullName, headRef
     try {
       const { getFileContentAction } = await import("@/app/actions/github");
       const result = await getFileContentAction(repoFullName, file.path, headRef);
-      if (result.ok) setFullFileContent(result.content);
-      else setFullFileError(result.error);
+      if (result.ok) {
+        setFullFileContent(result.content);
+      } else {
+        toast.error("Couldn't load full file. Showing changes only.");
+        setFullFileError(null);
+        setShowFullView(false);
+      }
     } catch {
-      setFullFileError("Failed to load file");
+      toast.error("Couldn't load full file. Showing changes only.");
+      setFullFileError(null);
+      setShowFullView(false);
     } finally {
       setFullFileLoading(false);
     }
@@ -221,6 +372,23 @@ function FileBlock({ file, scrollToLine, scrollToFilePath, repoFullName, headRef
   const copyPath = useCallback(() => {
     void navigator.clipboard.writeText(file.path);
   }, [file.path]);
+
+  const getIssuesForLine = useCallback(
+    (lineNum: number): DiffReviewIssue[] => {
+      if (!reviewIssuesForFile?.length) return [];
+      return reviewIssuesForFile
+        .filter((issue) => issueAppliesToLine(issue, lineNum))
+        .map((issue) => ({
+          kind: issue.kind,
+          category: issue.category,
+          severity: issue.severity,
+          title: issue.title,
+          description: issue.description,
+          suggestion: issue.suggestion,
+        }));
+    },
+    [reviewIssuesForFile]
+  );
 
   return (
     <div className="min-w-0">
@@ -283,8 +451,7 @@ function FileBlock({ file, scrollToLine, scrollToFilePath, repoFullName, headRef
                     <span className="text-sm font-medium">Loading full file…</span>
                   </div>
                 )}
-                {fullFileError && !fullFileLoading && <div className="px-4 py-4 text-sm text-destructive">{fullFileError}</div>}
-                {!fullFileLoading && !fullFileError && fullFileLines.length > 0 && (
+                {!fullFileLoading && fullFileLines.length > 0 && (
                   <div className="diff-full-file" data-language={language}>
                     {fullFileLines.map((content, i) => {
                       const lineNum = i + 1;
@@ -297,7 +464,9 @@ function FileBlock({ file, scrollToLine, scrollToFilePath, repoFullName, headRef
                         newLineNumber: lineNum,
                       };
                       const highlighted = isTargetFile && scrollToLine != null && lineNum === scrollToLine;
-                      return <DiffLine key={lineNum} line={syntheticLine} showOld showNew lineId={lineId} highlighted={highlighted} language={language} resolvedTheme={theme} />;
+                      const lineIssues = getIssuesForLine(lineNum);
+                      const lineKey = `${file.path}:${lineNum}`;
+                      return <DiffLine key={lineNum} line={syntheticLine} showOld showNew lineId={lineId} highlighted={highlighted} language={language} resolvedTheme={theme} lineIssues={lineIssues.length ? lineIssues : undefined} lineKey={lineKey} isExpanded={expandedLineKey === lineKey} onExpandedChange={(open) => onExpandedLineChange?.(open ? lineKey : null)} />;
                     })}
                   </div>
                 )}
@@ -318,7 +487,9 @@ function FileBlock({ file, scrollToLine, scrollToFilePath, repoFullName, headRef
                       const lineNum = line.newLineNumber ?? line.oldLineNumber ?? li;
                       const lineId = `diff-line-${safeId(file.path)}-${lineNum}`;
                       const highlighted = isTargetFile && scrollToLine != null && lineNum === scrollToLine;
-                      return <DiffLine key={`${hi}-${li}`} line={line} showOld={line.type !== "add"} showNew={line.type !== "del"} lineId={lineId} highlighted={highlighted} language={language} resolvedTheme={theme} />;
+                      const lineIssues = getIssuesForLine(lineNum);
+                      const lineKey = `${file.path}:${lineNum}`;
+                      return <DiffLine key={`${hi}-${li}`} line={line} showOld={line.type !== "add"} showNew={line.type !== "del"} lineId={lineId} highlighted={highlighted} language={language} resolvedTheme={theme} lineIssues={lineIssues.length ? lineIssues : undefined} lineKey={lineKey} isExpanded={expandedLineKey === lineKey} onExpandedChange={(open) => onExpandedLineChange?.(open ? lineKey : null)} />;
                     })}
                   </div>
                 </div>
@@ -331,7 +502,7 @@ function FileBlock({ file, scrollToLine, scrollToFilePath, repoFullName, headRef
   );
 }
 
-export function PRDiffViewer({ files, repoFullName = null, headRef = null, className, scrollToFilePath = null, scrollToLine = null }: PRDiffViewerProps) {
+export function PRDiffViewer({ files, repoFullName = null, headRef = null, className, scrollToFilePath = null, scrollToLine = null, reviewIssues = null, expandedLineKey = null, onExpandedLineChange }: PRDiffViewerProps) {
   useEffect(() => {
     if (!scrollToFilePath) return;
     const fileId = `diff-file-${safeId(scrollToFilePath)}`;
@@ -362,7 +533,17 @@ export function PRDiffViewer({ files, repoFullName = null, headRef = null, class
     <div className={cn("h-full w-full overflow-auto min-w-0", className)}>
       <div className="min-w-0 min-h-full space-y-1">
         {files.map((file, i) => (
-          <FileBlock key={`${file.path}-${i}`} file={file} scrollToFilePath={scrollToFilePath} scrollToLine={scrollToLine} repoFullName={repoFullName} headRef={headRef} />
+          <FileBlock
+            key={`${file.path}-${i}`}
+            file={file}
+            scrollToFilePath={scrollToFilePath}
+            scrollToLine={scrollToLine}
+            repoFullName={repoFullName}
+            headRef={headRef}
+            reviewIssuesForFile={reviewIssues?.filter((issue) => filePathMatches(file.path, issue.filePath))}
+            expandedLineKey={expandedLineKey}
+            onExpandedLineChange={onExpandedLineChange}
+          />
         ))}
       </div>
     </div>

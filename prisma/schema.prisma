@@ -111,24 +111,46 @@ model PullRequest {
 // AI Review Results
 // ---------------------------------------------------------------------------
 
+enum CodeReviewStatus {
+  pending
+  completed
+  failed
+}
+
 model CodeReview {
-  id             String   @id @default(cuid())
-  pullRequestId  String
-  pullRequest    PullRequest @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
-  qualityScore   Int      // 0-100
-  summary        String?  @db.Text
-  rawResponse    String?  @db.Text // Full AI response for debugging
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                   String           @id @default(cuid())
+  pullRequestId        String
+  pullRequest          PullRequest      @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+  status               CodeReviewStatus @default(pending)
+  qualityScore         Int              @default(0) // 0-100 overall
+  codeQualityScore     Int?             // 0-100
+  securityScore        Int?             // 0-100
+  secretsScore         Int?             // 0-100
+  performanceScore     Int?             // 0-100
+  maintainabilityScore Int?             // 0-100
+  summary              String?          @db.Text
+  scoreBreakdown       Json?            // { codeQuality, security, secrets, performance, maintainability }
+  globalIssues         Json?            // AI global issues (no file/line)
+  inlineIssues         Json?            // AI inline issues (file, startLine, endLine, ...)
+  rawResponse          String?          @db.Text // Full AI JSON response
+  reviewVersion        Int              @default(1) // Prompt/schema version for future upgrades
+  aiModel              String?          // Model used (e.g. gpt-4o-mini)
+  executionTimeMs      Int?             // Wall time of AI call
+  tokenUsage           Json?            // { prompt, completion, total } from provider
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
 
   issues CodeReviewIssue[]
+
+  @@index([pullRequestId, status])
 }
 
 model CodeReviewIssue {
   id           String     @id @default(cuid())
   codeReviewId String
   codeReview   CodeReview @relation(fields: [codeReviewId], references: [id], onDelete: Cascade)
-  kind         String     // "security" | "improvement"
+  kind         String     // "security" | "improvement" | "secrets" | "performance" | "global" etc.
+  category     String?    // e.g. "Security vulnerabilities", "Code Quality & Maintainability"
   title        String
   description  String?    @db.Text
   severity     String?    // low, medium, high, critical
@@ -136,9 +158,12 @@ model CodeReviewIssue {
   lineStart    Int?
   lineEnd      Int?
   snippet      String?    @db.Text
+  suggestion   String?    @db.Text // Actionable suggestion from AI
   createdAt    DateTime   @default(now())
 
   @@index([codeReviewId])
+  @@index([codeReviewId, kind])
+  @@index([codeReviewId, severity])
 }
 
 // ---------------------------------------------------------------------------

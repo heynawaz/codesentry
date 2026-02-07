@@ -25,7 +25,13 @@ export async function runReviewAction(pullRequestId: string): Promise<RunReviewR
 
   try {
     const diff = await getPullRequestDiff(session.user.id, owner, name, pr.githubPrId);
-    const review = await createReview({ pullRequestId: pr.id, diff });
+    const review = await createReview({
+      pullRequestId: pr.id,
+      diff,
+      prTitle: pr.title,
+      prDescription: null,
+      techStack: null,
+    });
     return { ok: true, reviewId: review.id, qualityScore: review.qualityScore };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Review failed";

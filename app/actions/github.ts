@@ -31,11 +31,16 @@ export async function getFileContentAction(repoFullName: string, path: string, r
   if (!owner || !repo) return { ok: false, error: "Invalid repo" };
   try {
     const content = await github.getFileContent(session.user.id, owner, repo, path, ref);
-    if (content === null) return { ok: false, error: "File not found or not a file" };
+    if (content === null) return { ok: false, error: "File not found or not available for this branch." };
     return { ok: true, content };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to load file";
     console.error("[getFileContentAction]", e);
-    return { ok: false, error: message };
+    // Don't expose raw API responses (e.g. GitHub 404 JSON) to the UI
+    const genericMessage =
+      message.includes("404") || message.includes("Not Found")
+        ? "File not found or not available for this branch."
+        : "Couldn't load full file. Try again or view changes only.";
+    return { ok: false, error: genericMessage };
   }
 }

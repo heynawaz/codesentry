@@ -148,8 +148,9 @@ export function AppSidebar({ user, companyName = "CodeSentry" }: AppSidebarProps
 
       <Separator className="shrink-0" />
 
-      {/* User profile block - footer */}
+      {/* User profile block - footer. Dropdown only after mount to avoid Radix ID hydration mismatch. */}
       <div className={cn("shrink-0 p-3", collapsed && "flex justify-center px-2")}>
+        {mounted ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button type="button" className={cn("flex cursor-pointer items-center rounded-lg transition-colors hover:bg-muted", collapsed ? "justify-center p-2" : "w-full gap-3 px-3 py-2.5 text-left")}>
@@ -209,6 +210,23 @@ export function AppSidebar({ user, companyName = "CodeSentry" }: AppSidebarProps
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        ) : (
+          <div className={cn("flex cursor-pointer items-center rounded-lg transition-colors hover:bg-muted", collapsed ? "justify-center p-2" : "w-full gap-3 px-3 py-2.5 text-left")}>
+            <Avatar className="size-9 shrink-0 ring-2 ring-border">
+              <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? ""} />
+              <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">{user?.name?.slice(0, 2)?.toUpperCase() ?? "U"}</AvatarFallback>
+            </Avatar>
+            {!collapsed && (
+              <>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">{user?.name ?? "User"}</p>
+                  <p className="truncate text-xs text-muted-foreground">{user?.email ?? "user@example.com"}</p>
+                </div>
+                <MoreVertical className="size-4 shrink-0 text-muted-foreground" />
+              </>
+            )}
+          </div>
+        )}
       </div>
     </motion.aside>
   );

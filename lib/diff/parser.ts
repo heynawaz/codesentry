@@ -80,3 +80,49 @@ export function parseUnifiedDiff(diff: string): ParsedFile[] {
 
   return files;
 }
+
+/**
+ * Build a map of file path -> set of new-file line numbers that appear in the diff.
+ * Used to filter AI review issues to only lines that are actually modified/added (post-merge).
+ */
+export function getDiffNewLineNumbers(diff: string): Map<string, Set<number>> {
+  const files = parseUnifiedDiff(diff);
+  const map = new Map<string, Set<number>>();
+  for (const file of files) {
+    const lineNumbers = new Set<number>();
+    for (const hunk of file.hunks) {
+      for (const line of hunk.lines) {
+        if (line.newLineNumber != null) {
+          lineNumbers.add(line.newLineNumber);
+        }
+      }
+    }
+    if (lineNumbers.size > 0) {
+      map.set(file.path, lineNumbers);
+    }
+  }
+  return map;
+}
+
+/**
+ * Build a map of file path -> set of new-file line numbers for ADDED lines only (+ in diff).
+ * Use this to restrict AI inline issues to code that is actually being added/changed, not context.
+ */
+export function getDiffAddedLineNumbers(diff: string): Map<string, Set<number>> {
+  const files = parseUnifiedDiff(diff);
+  const map = new Map<string, Set<number>>();
+  for (const file of files) {
+    const lineNumbers = new Set<number>();
+    for (const hunk of file.hunks) {
+      for (const line of hunk.lines) {
+        if (line.type === "add" && line.newLineNumber != null) {
+          lineNumbers.add(line.newLineNumber);
+        }
+      }
+    }
+    if (lineNumbers.size > 0) {
+      map.set(file.path, lineNumbers);
+    }
+  }
+  return map;
+}

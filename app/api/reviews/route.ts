@@ -43,8 +43,21 @@ export async function POST(request: Request) {
 
   try {
     const diff = await getPullRequestDiff(session.user.id, owner, name, pr.githubPrId);
-    const review = await createReview({ pullRequestId: pr.id, diff });
-    return NextResponse.json({ id: review.id, qualityScore: review.qualityScore });
+    const review = await createReview({
+      pullRequestId: pr.id,
+      diff,
+      prTitle: pr.title,
+      prDescription: null,
+      techStack: null,
+    });
+    return NextResponse.json({
+      id: review.id,
+      status: review.status,
+      qualityScore: review.qualityScore,
+      codeQualityScore: review.codeQualityScore ?? undefined,
+      securityScore: review.securityScore ?? undefined,
+      secretsScore: review.secretsScore ?? undefined,
+    });
   } catch (e) {
     console.error("Review failed:", e);
     return NextResponse.json({ error: e instanceof Error ? e.message : "Review failed" }, { status: 500 });

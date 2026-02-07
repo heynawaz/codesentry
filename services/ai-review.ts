@@ -1,6 +1,6 @@
 /**
- * AI Code Review service (stub).
- * TODO: Replace with real OpenAI/LLM integration.
+ * @deprecated Use services/ai (reviewService + aiClient) for the production AI review pipeline.
+ * This stub remains only for reference; createReview in lib/reviews uses runReview from services/ai.
  */
 
 export type ReviewIssue = {

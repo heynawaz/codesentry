@@ -88,18 +88,19 @@ prisma/
 - **Sync PRs**: `lib/sync-prs.syncPullRequests(userId, repositoryId)` – fetch open PRs from GitHub, upsert into DB, set lastScannedAt.
 - **Get diff**: `services/github.getPullRequestDiff(userId, owner, repo, pullNumber)`.
 
-## AI review pipeline (stub)
+## AI review pipeline
 
-- **Service**: `services/ai-review.reviewPullRequestDiff(diff)` → returns mocked `ReviewResult` (qualityScore, summary, securityIssues, improvements).
-- **TODO**: Replace with real OpenAI (or other) API; keep the same `ReviewResult` shape.
-- **Persistence**: `lib/reviews.createReview({ pullRequestId, diff })` – calls AI service, then creates `CodeReview` + `CodeReviewIssue` rows.
-- **API**: `POST /api/reviews` with `{ pullRequestId }` – loads PR, fetches diff, runs `createReview`, returns `{ id, qualityScore }`.
+- **Services/ai**: `services/ai/reviewService.runReview(input)` – builds prompt (`reviewPromptBuilder`), calls LLM (`aiClient`), parses JSON (`reviewParser`), returns normalized scores and issues. Provider abstraction in `aiClient` (OpenAI default; extensible).
+- **Persistence**: `lib/reviews.createReview({ pullRequestId, diff, prTitle, ... })` – runs `runReview`, then creates `CodeReview` (status, overall + codeQuality + security + secrets scores, summary, rawResponse, reviewVersion, executionTimeMs, tokenUsage) and `CodeReviewIssue` rows (kind: security | improvement | secrets, suggestion).
+- **API**: `POST /api/review/[pullRequestId]` – idempotent: returns existing completed review if any; else fetches diff, runs `createReview`, returns structured response. Legacy `POST /api/reviews` with body `{ pullRequestId }` still supported.
+- **TODO**: Webhooks for auto-review on PR update; inline PR comments; continuous scanning.
 
 ## Environment
 
 - `DATABASE_URL` – PostgreSQL connection string.
 - `ENCRYPTION_KEY` – 32+ character secret for encrypting GitHub tokens.
 - `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`, `AUTH_SECRET` – NextAuth (existing).
+- `OPENAI_API_KEY` – Required for AI code review (services/ai). Optional: `OPENAI_REVIEW_MODEL` (default `gpt-4o-mini`).
 
 ## Commands
 

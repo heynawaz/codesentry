@@ -36,9 +36,11 @@ const PRDiffViewer = dynamic(() => import("@/components/dashboard/pr-diff-viewer
 type Issue = {
   id: string;
   kind: string;
+  category?: string | null;
   title: string;
   description: string | null;
   severity: string | null;
+  suggestion?: string | null;
   filePath: string | null;
   lineStart: number | null;
   lineEnd: number | null;
@@ -47,8 +49,16 @@ type Issue = {
 
 type Review = {
   id: string;
+  status: "pending" | "completed" | "failed";
   qualityScore: number;
+  codeQualityScore?: number;
+  securityScore?: number;
+  secretsScore?: number;
+  performanceScore?: number;
+  maintainabilityScore?: number;
   summary: string | null;
+  executionTimeMs?: number | null;
+  scoreBreakdown?: unknown;
   issues: Issue[];
 } | null;
 
@@ -65,6 +75,7 @@ export function PRDetailTabs({ repoFullName, githubPrId, headRef, parsedFiles, l
   const [scrollToFilePath, setScrollToFilePath] = useState<string | null>(null);
   const [scrollToLine, setScrollToLine] = useState<number | null>(null);
   const [changeType, setChangeType] = useState<ChangeTypeFilter>("all");
+  const [expandedLineKey, setExpandedLineKey] = useState<string | null>(null);
 
   const filteredFiles = useMemo(
     () => filterFilesByChangeType(parsedFiles, changeType),
@@ -74,6 +85,21 @@ export function PRDetailTabs({ repoFullName, githubPrId, headRef, parsedFiles, l
   const pathSet = useMemo(() => new Set(filteredFiles.map((f) => f.path)), [filteredFiles]);
   const effectivePath =
     scrollToFilePath && pathSet.has(scrollToFilePath) ? scrollToFilePath : filteredFiles[0]?.path ?? null;
+
+  const filteredReviewIssues = useMemo(() => {
+    if (!latestReview?.issues?.length) return null;
+    return latestReview.issues.map((i) => ({
+      filePath: i.filePath,
+      lineStart: i.lineStart,
+      lineEnd: i.lineEnd,
+      kind: i.kind,
+      category: i.category,
+      severity: i.severity,
+      title: i.title,
+      description: i.description,
+      suggestion: i.suggestion,
+    }));
+  }, [latestReview]);
 
   const onJumpToFile = useCallback((path: string, line?: number) => {
     setScrollToFilePath(path || null);
@@ -119,7 +145,17 @@ export function PRDetailTabs({ repoFullName, githubPrId, headRef, parsedFiles, l
                 <ResizableHandle withHandle className="shrink-0" />
                 <ResizablePanel defaultSize={78} minSize={50} className="min-w-0">
                   <div className="h-full w-full overflow-hidden">
-                    <PRDiffViewer files={filteredFiles} repoFullName={repoFullName} headRef={headRef} className="h-full w-full" scrollToFilePath={effectivePath} scrollToLine={scrollToLine} />
+                    <PRDiffViewer
+                      files={filteredFiles}
+                      repoFullName={repoFullName}
+                      headRef={headRef}
+                      className="h-full w-full"
+                      scrollToFilePath={effectivePath}
+                      scrollToLine={scrollToLine}
+                      reviewIssues={filteredReviewIssues}
+                      expandedLineKey={expandedLineKey}
+                      onExpandedLineChange={setExpandedLineKey}
+                    />
                   </div>
                 </ResizablePanel>
               </ResizablePanelGroup>
