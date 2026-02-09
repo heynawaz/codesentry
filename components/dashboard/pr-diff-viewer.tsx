@@ -289,7 +289,7 @@ function normalizeLineForMatch(s: string): string {
 function issueAppliesToLine(issue: ReviewIssueForDiff, lineNum: number, lineContent?: string): boolean {
   const start = issue.lineStart;
   const end = issue.lineEnd ?? start;
-  const inRange = start != null && lineNum >= start && lineNum <= end;
+  const inRange = start != null && end != null && lineNum >= start && lineNum <= end;
   const hasSnippet = issue.snippet?.trim();
 
   // When we have a snippet, prefer matching by code so the correct line is highlighted (fixes wrong AI line numbers).
