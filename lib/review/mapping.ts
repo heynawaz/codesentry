@@ -14,15 +14,17 @@ export type InlineIssueForDiff = {
   severity: string;
   message: string;
   suggestion: string;
+  snippet?: string | null;
+  fixedCode?: string | null;
 };
 
 const normalizePath = (p: string) => p.trim().replace(/^\/+/, "");
 
-function findAllowedLines(normalizedPath: string, map: Map<string, Set<number>>): Set<number> | null {
-  const direct = map.get(normalizedPath);
+function findAllowedLines(normalizedPath: string, byPath: Record<string, Set<number>>): Set<number> | null {
+  const direct = byPath[normalizedPath];
   if (direct) return direct;
-  for (const [key, lines] of map) {
-    if (key === normalizedPath || key.endsWith("/" + normalizedPath)) return lines;
+  for (const key of Object.keys(byPath)) {
+    if (key === normalizedPath || key.endsWith("/" + normalizedPath)) return byPath[key];
   }
   return null;
 }
@@ -39,7 +41,7 @@ export function filterInlineIssuesToDiff(
 
   for (const issue of inlineIssues) {
     const path = normalizePath(issue.file);
-    const allowed = path ? allowedByPath.get(path) ?? findAllowedLines(path, allowedByPath) : null;
+    const allowed = path ? (allowedByPath[path] ?? findAllowedLines(path, allowedByPath)) : null;
     if (!allowed) continue;
     const start = issue.startLine;
     const end = issue.endLine ?? start;
@@ -54,6 +56,8 @@ export function filterInlineIssuesToDiff(
       severity: issue.severity,
       message: issue.message,
       suggestion: issue.suggestion,
+      snippet: issue.snippet ?? null,
+      fixedCode: issue.fixedCode ?? null,
     });
   }
   return result;
@@ -72,6 +76,8 @@ export function inlineIssuesToDbIssues(
   description: string | null;
   severity: string;
   suggestion: string | null;
+  snippet: string | null;
+  fixedCode: string | null;
   filePath: string;
   lineStart: number;
   lineEnd: number | null;
@@ -84,6 +90,8 @@ export function inlineIssuesToDbIssues(
     description: i.message || null,
     severity: i.severity,
     suggestion: i.suggestion?.slice(0, 2000) || null,
+    snippet: i.snippet?.slice(0, 2000) ?? null,
+    fixedCode: i.fixedCode?.slice(0, 2000) ?? null,
     filePath: i.file,
     lineStart: i.startLine,
     lineEnd: i.endLine,

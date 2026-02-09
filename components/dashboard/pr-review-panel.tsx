@@ -5,7 +5,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Shield, Lightbulb, KeyRound, Sparkles } from "lucide-react";
 import {
   ReviewSummaryCard,
-  ScoreBreakdown,
   ReviewScoresChart,
   IssueDistributionChart,
   ReviewScoreGauge,
@@ -26,6 +25,7 @@ type Issue = {
   lineStart: number | null;
   lineEnd: number | null;
   snippet: string | null;
+  fixedCode?: string | null;
 };
 
 type Review = {
@@ -135,24 +135,17 @@ export function PRReviewPanel({
           </div>
         </div>
 
-        <ScoreBreakdown
-          overall={review.qualityScore}
-          codeQuality={review.codeQualityScore}
-          security={review.securityScore}
-          secrets={review.secretsScore}
-          performance={review.performanceScore}
-          maintainability={review.maintainabilityScore}
-          className="shadow-none"
-        />
-
-        {/* Issues section */}
+        {/* Issues section: each finding shows title, code/location, description, suggestion */}
         {hasIssues && (
           <div>
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Findings
             </h3>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Issues with code location and suggested fixes. Use <strong>View in diff</strong> to jump to the line in the PR.
+            </p>
             <Card className="overflow-hidden shadow-none">
-              <ScrollArea className="max-h-[min(70vh,32rem)]">
+              <ScrollArea className="max-h-[min(70vh,36rem)]">
                 <CardContent className="divide-y divide-border/80 p-0">
                   {securityIssues.length > 0 && (
                     <div className="p-4">
@@ -199,7 +192,7 @@ export function PRReviewPanel({
                       </h4>
                       <IssueList
                         issues={improvementIssues}
-                        kindFilter="improvement"
+                        kindFilter="all"
                         onJumpToFile={onJumpToFile}
                         className="max-h-none"
                       />

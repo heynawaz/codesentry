@@ -9,7 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 import { SyncPrsButton } from "@/components/dashboard/sync-prs-button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { GitPullRequest, ChevronRight, GitBranch, MessageSquare } from "lucide-react";
+import { GitPullRequest, ChevronRight, GitBranch, MessageSquare, User, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default async function RepositoryPage({ params }: { params: Promise<{ id: string }> }) {
@@ -39,49 +39,49 @@ export default async function RepositoryPage({ params }: { params: Promise<{ id:
   const openCount = repo.pullRequests.filter((pr) => pr.state.toLowerCase() === "open").length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
+    <div className="space-y-8">
+      {/* Page header */}
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-2">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link href="/dashboard" className="cursor-pointer">Repositories</Link>
+                  <Link href="/dashboard" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
+                    Repositories
+                  </Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>{repo.fullName}</BreadcrumbPage>
+                <BreadcrumbPage className="text-muted-foreground font-normal text-sm">{repo.fullName}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-          <h1 className="text-2xl font-bold tracking-tight">{repo.fullName}</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{repo.fullName}</h1>
           <p className="text-sm text-muted-foreground">View and review pull requests</p>
         </div>
-        <SyncPrsButton repositoryId={repo.id} />
-      </div>
+        <div className="shrink-0">
+          <SyncPrsButton repositoryId={repo.id} />
+        </div>
+      </header>
 
-      <Card className="overflow-hidden rounded-xl border shadow-sm">
-        <CardHeader className="border-b border-border/50 bg-muted/20 pb-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <GitPullRequest className="size-5" />
-              </div>
-              <div>
-                <CardTitle className="text-lg">Pull requests</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {repo.pullRequests.length === 0
-                    ? "No PRs synced yet"
-                    : `${openCount} open · ${repo.pullRequests.length} total`}
-                </p>
-              </div>
+      {/* Pull requests card */}
+      <Card className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm p-0 gap-0">
+        <CardHeader className="border-b border-border/80 px-6 py-3! gap-0 sm:px-8">
+          <div className="flex items-center gap-4">
+            <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <GitPullRequest className="size-6" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-semibold">Pull requests</CardTitle>
+              <p className="mt-0.5 text-sm text-muted-foreground">{repo.pullRequests.length === 0 ? "No PRs synced yet" : `${openCount} open · ${repo.pullRequests.length} total`}</p>
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           {repo.pullRequests.length === 0 ? (
-            <Empty className="min-h-[220px] border-0">
+            <Empty className="min-h-[260px] border-0">
               <EmptyHeader>
                 <EmptyMedia variant="icon">
                   <GitPullRequest />
@@ -94,59 +94,52 @@ export default async function RepositoryPage({ params }: { params: Promise<{ id:
               </EmptyContent>
             </Empty>
           ) : (
-            <ul className="divide-y divide-border">
+            <ul className="divide-y divide-border/80">
               {repo.pullRequests.map((pr) => {
                 const state = pr.state.toLowerCase();
                 const reviewCount = pr._count.codeReviews;
                 return (
                   <li key={pr.id}>
-                    <Link
-                      href={`/dashboard/repositories/${repo.id}/pr/${pr.id}`}
-                      className="flex cursor-pointer items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/50 sm:px-6"
-                    >
-                      <Avatar className="size-9 shrink-0 border-2 border-background shadow-sm">
+                    <Link href={`/dashboard/repositories/${repo.id}/pr/${pr.id}`} className="group flex cursor-pointer items-start gap-4 px-6 py-5 transition-colors hover:bg-muted/40 sm:items-center sm:px-8">
+                      <Avatar className="size-10 shrink-0 border-2 border-background shadow-sm ring-1 ring-border/50">
                         <AvatarImage src={pr.authorAvatar ?? undefined} alt={pr.author ?? ""} />
-                        <AvatarFallback className="bg-muted text-xs font-medium">
-                          {pr.author?.slice(0, 2)?.toUpperCase() ?? "?"}
-                        </AvatarFallback>
+                        <AvatarFallback className="bg-muted text-sm font-medium">{pr.author?.slice(0, 2)?.toUpperCase() ?? "?"}</AvatarFallback>
                       </Avatar>
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 space-y-1.5">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-foreground">
+                          <span className="font-semibold text-foreground truncate">
                             #{pr.githubPrId} {pr.title}
                           </span>
-                          <Badge
-                            variant={state === "open" ? "default" : "secondary"}
-                            className={cn(
-                              "rounded-md text-xs font-medium",
-                              state === "open" && "bg-emerald-600 hover:bg-emerald-600/90 text-white dark:bg-emerald-500 dark:hover:bg-emerald-500/90"
-                            )}
-                          >
+                          <Badge variant={state === "open" ? "default" : "secondary"} className={cn("shrink-0 rounded-full text-xs font-medium px-2.5", state === "open" && "bg-emerald-600 hover:bg-emerald-600/90 text-white dark:bg-emerald-500 dark:hover:bg-emerald-500/90")}>
                             {state}
                           </Badge>
                           {reviewCount > 0 && (
-                            <Badge variant="outline" className="rounded-md gap-1 text-xs">
-                              <MessageSquare className="size-3" />
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted/80 px-2.5 py-0.5 text-xs text-muted-foreground">
+                              <MessageSquare className="size-3.5" />
                               {reviewCount} review{reviewCount !== 1 ? "s" : ""}
-                            </Badge>
+                            </span>
                           )}
                         </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm text-muted-foreground">
-                          {pr.author && <span>{pr.author}</span>}
-                          <span>·</span>
-                          <span>Updated {formatDistanceToNow(pr.updatedAt, { addSuffix: true })}</span>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+                          {pr.author && (
+                            <span className="inline-flex items-center gap-1">
+                              <User className="size-3.5 shrink-0" />
+                              {pr.author}
+                            </span>
+                          )}
+                          <span className="inline-flex items-center gap-1">
+                            <Clock className="size-3.5 shrink-0" />
+                            Updated {formatDistanceToNow(pr.updatedAt, { addSuffix: true })}
+                          </span>
                           {(pr.baseRef || pr.headRef) && (
-                            <>
-                              <span>·</span>
-                              <span className="inline-flex items-center gap-1 font-mono text-xs">
-                                <GitBranch className="size-3" />
-                                {pr.baseRef ?? "?"} → {pr.headRef ?? "?"}
-                              </span>
-                            </>
+                            <span className="inline-flex items-center gap-1 font-mono">
+                              <GitBranch className="size-3.5 shrink-0" />
+                              {pr.baseRef ?? "?"} → {pr.headRef ?? "?"}
+                            </span>
                           )}
                         </div>
                       </div>
-                      <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
+                      <ChevronRight className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                     </Link>
                   </li>
                 );

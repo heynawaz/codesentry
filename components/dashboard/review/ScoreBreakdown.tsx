@@ -51,9 +51,11 @@ export function ScoreBreakdown({
           <div className="space-y-4">
             {items.map(({ key, value }) => (
               <div key={key} className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{labels[key] ?? key}</span>
-                  <span className="font-medium tabular-nums">{value}/100</span>
+                <div className="flex justify-between items-baseline gap-3 text-sm">
+                  <span className="text-muted-foreground min-w-0 truncate">{labels[key] ?? key}</span>
+                  <span className="font-medium tabular-nums shrink-0 w-[5rem] text-right overflow-visible whitespace-nowrap" aria-label={`${value} out of 100`}>
+                    {Number(value)}/100
+                  </span>
                 </div>
                 <Progress value={value} className="h-2 rounded-full" />
               </div>

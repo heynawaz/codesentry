@@ -82,12 +82,11 @@ export function parseUnifiedDiff(diff: string): ParsedFile[] {
 }
 
 /**
- * Build a map of file path -> set of new-file line numbers that appear in the diff.
- * Used to filter AI review issues to only lines that are actually modified/added (post-merge).
+ * Build file path -> set of new-file line numbers that appear in the diff.
  */
-export function getDiffNewLineNumbers(diff: string): Map<string, Set<number>> {
+export function getDiffNewLineNumbers(diff: string): Record<string, Set<number>> {
   const files = parseUnifiedDiff(diff);
-  const map = new Map<string, Set<number>>();
+  const out: Record<string, Set<number>> = Object.create(null);
   for (const file of files) {
     const lineNumbers = new Set<number>();
     for (const hunk of file.hunks) {
@@ -98,31 +97,38 @@ export function getDiffNewLineNumbers(diff: string): Map<string, Set<number>> {
       }
     }
     if (lineNumbers.size > 0) {
-      map.set(file.path, lineNumbers);
+      out[file.path] = lineNumbers;
     }
   }
-  return map;
+  return out;
 }
 
+const MAX_FILES_FOR_LINE_MAP = 500;
+const MAX_LINES_PER_FILE = 50_000;
+
 /**
- * Build a map of file path -> set of new-file line numbers for ADDED lines only (+ in diff).
- * Use this to restrict AI inline issues to code that is actually being added/changed, not context.
+ * Build file path -> set of new-file line numbers for ADDED lines only (+ in diff).
+ * Returns a plain object to avoid Map stack overflow with large diffs; caps size for safety.
  */
-export function getDiffAddedLineNumbers(diff: string): Map<string, Set<number>> {
+export function getDiffAddedLineNumbers(diff: string): Record<string, Set<number>> {
   const files = parseUnifiedDiff(diff);
-  const map = new Map<string, Set<number>>();
-  for (const file of files) {
+  const out: Record<string, Set<number>> = Object.create(null);
+  for (let f = 0; f < Math.min(files.length, MAX_FILES_FOR_LINE_MAP); f++) {
+    const file = files[f];
     const lineNumbers = new Set<number>();
+    let lineCount = 0;
     for (const hunk of file.hunks) {
       for (const line of hunk.lines) {
+        if (lineCount >= MAX_LINES_PER_FILE) break;
         if (line.type === "add" && line.newLineNumber != null) {
           lineNumbers.add(line.newLineNumber);
+          lineCount++;
         }
       }
     }
     if (lineNumbers.size > 0) {
-      map.set(file.path, lineNumbers);
+      out[file.path] = lineNumbers;
     }
   }
-  return map;
+  return out;
 }

@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 type PRHeaderProps = {
   repositoryId: string;
@@ -37,6 +38,10 @@ export function PRHeader({ repositoryId, repoFullName, pr, runReviewAction }: PR
       const result = await runReviewAction(pr.id);
       if (result.ok) {
         router.refresh();
+        router.push(`/dashboard/repositories/${repositoryId}/pr/${pr.id}?tab=review`);
+        toast.success("AI Review complete.");
+      } else {
+        toast.error(result.error);
       }
     });
   };

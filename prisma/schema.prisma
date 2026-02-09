@@ -159,6 +159,7 @@ model CodeReviewIssue {
   lineEnd      Int?
   snippet      String?    @db.Text
   suggestion   String?    @db.Text // Actionable suggestion from AI
+  fixedCode    String?    @db.Text // Corrected code to apply (optional)
   createdAt    DateTime   @default(now())
 
   @@index([codeReviewId])

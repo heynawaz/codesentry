@@ -19,8 +19,12 @@ export type InlineIssue = {
   endLine: number | null;
   category: string;
   severity: ReviewSeverity;
+  /** Exact code snippet (the highlighted/problematic lines) for display. */
+  snippet?: string | null;
   message: string;
   suggestion: string;
+  /** Corrected code to apply (the fix). When the fix is a code change, provide the exact replacement code. */
+  fixedCode?: string | null;
 };
 
 export type ReviewScores = {

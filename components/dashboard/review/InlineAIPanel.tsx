@@ -9,6 +9,8 @@ export type InlineAIPanelIssue = {
   title: string;
   description?: string | null;
   suggestion?: string | null;
+  snippet?: string | null;
+  fixedCode?: string | null;
 };
 
 export type InlineAIPanelProps = {
@@ -46,11 +48,24 @@ export function InlineAIPanel({ issues, className }: InlineAIPanelProps) {
           {issue.description && issue.description !== issue.title && (
             <p className="text-xs leading-relaxed text-muted-foreground">{issue.description}</p>
           )}
-          {issue.suggestion && (
+          {issue.snippet && (
+            <pre className="mt-1.5 overflow-x-auto rounded border border-border/80 bg-muted/60 px-2 py-1.5 text-xs">
+              {issue.snippet}
+            </pre>
+          )}
+          {issue.suggestion && !issue.fixedCode && (
             <p className="text-xs text-primary">
               <span className="font-medium">Suggestion: </span>
               {issue.suggestion}
             </p>
+          )}
+          {(issue.fixedCode ?? issue.suggestion) && (
+            <>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">Code fix</p>
+              <pre className="overflow-x-auto rounded border border-primary/20 bg-primary/5 px-2 py-1.5 text-xs font-mono whitespace-pre-wrap">
+                {issue.fixedCode ?? issue.suggestion}
+              </pre>
+            </>
           )}
         </div>
       ))}

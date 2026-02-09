@@ -95,6 +95,8 @@ export type DiffReviewIssue = {
   title: string;
   description?: string | null;
   suggestion?: string | null;
+  snippet?: string | null;
+  fixedCode?: string | null;
 };
 
 /** Renders a single line of code with syntax highlighting (GitHub-style in light, Atom One Dark in dark). */
@@ -134,11 +136,18 @@ type PRDiffViewerProps = {
   onExpandedLineChange?: (key: string | null) => void;
 };
 
-/** Severity border color: high=red, medium=amber, low=muted. */
+/** Severity: left border + row highlight so the line stands out on the diff. */
 function issueBorderClass(severity: string | null): string {
-  if (severity === "high" || severity === "critical") return "border-l-4 border-l-red-500 dark:border-l-red-400";
-  if (severity === "medium") return "border-l-4 border-l-amber-500 dark:border-l-amber-400";
-  return "border-l-4 border-l-muted-foreground/50";
+  if (severity === "high" || severity === "critical") return "border-l-4 border-l-red-500 dark:border-l-red-400 bg-[var(--diff-issue-high-bg)]";
+  if (severity === "medium") return "border-l-4 border-l-amber-500 dark:border-l-amber-400 bg-[var(--diff-issue-medium-bg)]";
+  return "border-l-4 border-l-muted-foreground/50 bg-[var(--diff-issue-low-bg)]";
+}
+
+/** Extra highlight on the code span so the exact code to fix is obvious. */
+function issueCodeHighlightClass(severity: string | null): string {
+  if (severity === "high" || severity === "critical") return "rounded-r border-l-2 border-l-red-500/60 dark:border-l-red-400/60 bg-red-500/5 dark:bg-red-500/10";
+  if (severity === "medium") return "rounded-r border-l-2 border-l-amber-500/60 dark:border-l-amber-400/60 bg-amber-500/5 dark:bg-amber-500/10";
+  return "rounded-r border-l-2 border-l-muted-foreground/40 bg-muted/30";
 }
 
 /** Single diff line – GitHub PR style. Optional review-issue marker; click opens InlineAIPanel in Popover. */
@@ -177,27 +186,35 @@ const DiffLine = memo(function DiffLine({
   const signFg = isAdd ? "text-[var(--diff-add-fg)]" : isDel ? "text-[var(--diff-del-fg)]" : "text-muted-foreground";
   const hasIssues = lineIssues && lineIssues.length > 0;
   const worstSeverity = hasIssues ? lineIssues.reduce((s, i) => (i.severity === "high" || i.severity === "critical" ? i.severity : s), null as string | null) : null;
+  const issueSeverity = worstSeverity ?? lineIssues?.[0]?.severity ?? null;
 
   const lineEl = (
     <div
       id={lineId}
       className={cn(
         "flex w-full min-w-min font-mono text-xs leading-relaxed py-0",
-        rowBg,
+        !hasIssues && rowBg,
         highlighted && "ring-inset ring-2 ring-primary/50 bg-primary/10",
-        hasIssues && issueBorderClass(worstSeverity ?? lineIssues![0]!.severity),
-        hasIssues && lineKey && "cursor-pointer hover:opacity-90"
+        hasIssues && issueBorderClass(issueSeverity),
+        hasIssues && lineKey && "cursor-pointer hover:opacity-95"
       )}
+      data-issue-line={hasIssues ? "true" : undefined}
+      title={hasIssues && lineKey ? "Click to see issue details and suggested fix" : undefined}
     >
       {hasIssues && (
-        <span className="flex shrink-0 items-center pl-1 pr-1.5 text-amber-600 dark:text-amber-400" title="AI review issue">
+        <span className="flex shrink-0 items-center pl-1 pr-1.5 text-amber-600 dark:text-amber-400" title="AI review issue – click for details">
           <AlertCircle className="size-3.5" aria-hidden />
         </span>
       )}
       <span className={cn("flex w-12 shrink-0 justify-end pr-3 tabular-nums select-none border-r border-border/50", oldNumBg, oldNumFg)}>{showOld ? (line.oldLineNumber ?? "") : ""}</span>
       <span className={cn("flex w-12 shrink-0 justify-end pr-3 tabular-nums select-none border-r border-border/50", newNumBg, newNumFg)}>{showNew ? (line.newLineNumber ?? "") : ""}</span>
       <span className={cn("w-4 shrink-0 pr-2 select-none", signFg)}>{isAdd ? "+" : isDel ? "-" : " "}</span>
-      <span className="min-w-0 flex-1 overflow-x-auto text-foreground">
+      <span
+        className={cn(
+          "min-w-0 flex-1 overflow-x-auto text-foreground py-0.5 pl-1",
+          hasIssues && issueCodeHighlightClass(issueSeverity)
+        )}
+      >
         <DiffLineContent content={line.content} language={language} theme={resolvedTheme} />
       </span>
     </div>
@@ -208,7 +225,7 @@ const DiffLine = memo(function DiffLine({
       <Popover open={isExpanded} onOpenChange={onExpandedChange}>
         <PopoverTrigger asChild>{lineEl}</PopoverTrigger>
         <PopoverContent side="left" className="w-80 p-0" align="start">
-          <InlineAIPanel issues={lineIssues!.map((i) => ({ kind: i.kind, category: i.category, severity: i.severity, title: i.title, description: i.description, suggestion: i.suggestion }))} />
+          <InlineAIPanel issues={lineIssues!.map((i) => ({ kind: i.kind, category: i.category, severity: i.severity, title: i.title, description: i.description, suggestion: i.suggestion, snippet: i.snippet ?? null, fixedCode: i.fixedCode ?? null }))} />
         </PopoverContent>
       </Popover>
     );
@@ -223,7 +240,9 @@ const DiffLine = memo(function DiffLine({
               <div key={idx}>
                 <p className="font-semibold text-foreground">{issue.title}</p>
                 {issue.description && <p className="text-muted-foreground mt-0.5">{issue.description}</p>}
-                {issue.suggestion && <p className="mt-1 text-primary">Suggestion: {issue.suggestion}</p>}
+                {(issue.fixedCode ?? issue.suggestion) && (
+                  <p className="mt-1 text-primary font-mono text-[11px] bg-primary/10 rounded px-1.5 py-1">{(issue.fixedCode ?? issue.suggestion)!}</p>
+                )}
                 <span className="text-muted-foreground capitalize">{issue.kind}</span>
                 {issue.severity && <span className="ml-1 text-muted-foreground">· {issue.severity}</span>}
               </div>
@@ -247,21 +266,46 @@ export type ReviewIssueForDiff = {
   title: string;
   description?: string | null;
   suggestion?: string | null;
+  snippet?: string | null;
+  fixedCode?: string | null;
 };
 
 function filePathMatches(filePath: string, issuePath: string | null): boolean {
   if (!issuePath?.trim()) return false;
-  const a = filePath.trim();
-  const b = issuePath.trim();
+  const norm = (p: string) => p.trim().replace(/^\/+/, "");
+  const a = norm(filePath);
+  const b = norm(issuePath);
+  if (!a || !b) return false;
   return a === b || a.endsWith("/" + b) || b.endsWith("/" + a);
 }
 
-function issueAppliesToLine(issue: ReviewIssueForDiff, lineNum: number): boolean {
+/** Normalize for snippet matching: trim, collapse spaces, strip diff +/- prefix if present. */
+function normalizeLineForMatch(s: string): string {
+  const t = s.trim();
+  const withoutPrefix = (t.startsWith("+") || t.startsWith("-")) ? t.slice(1).trim() : t;
+  return withoutPrefix.replace(/\s+/g, " ");
+}
+
+function issueAppliesToLine(issue: ReviewIssueForDiff, lineNum: number, lineContent?: string): boolean {
   const start = issue.lineStart;
-  if (start == null) return false;
-  const end = issue.lineEnd;
-  if (end == null || end === start) return lineNum === start;
-  return lineNum >= start && lineNum <= end;
+  const end = issue.lineEnd ?? start;
+  const inRange = start != null && lineNum >= start && lineNum <= end;
+  const hasSnippet = issue.snippet?.trim();
+
+  // When we have a snippet, prefer matching by code so the correct line is highlighted (fixes wrong AI line numbers).
+  if (lineContent != null && hasSnippet) {
+    const lineNorm = normalizeLineForMatch(lineContent);
+    const snippetLines = issue.snippet!.trim().split(/\r?\n/).map((l) => normalizeLineForMatch(l)).filter(Boolean);
+    const firstSnippet = snippetLines[0];
+    const snippetMatches =
+      firstSnippet &&
+      (lineNorm === firstSnippet || lineNorm.includes(firstSnippet) || firstSnippet.includes(lineNorm));
+    if (snippetMatches) return true;
+    // If snippet is set but this line doesn't match, do NOT use line number — avoid showing issue on wrong line.
+    if (hasSnippet) return false;
+  }
+
+  return inRange;
 }
 
 function FileBlock({
@@ -374,10 +418,10 @@ function FileBlock({
   }, [file.path]);
 
   const getIssuesForLine = useCallback(
-    (lineNum: number): DiffReviewIssue[] => {
+    (lineNum: number, lineContent?: string): DiffReviewIssue[] => {
       if (!reviewIssuesForFile?.length) return [];
       return reviewIssuesForFile
-        .filter((issue) => issueAppliesToLine(issue, lineNum))
+        .filter((issue) => issueAppliesToLine(issue, lineNum, lineContent))
         .map((issue) => ({
           kind: issue.kind,
           category: issue.category,
@@ -385,6 +429,8 @@ function FileBlock({
           title: issue.title,
           description: issue.description,
           suggestion: issue.suggestion,
+          snippet: issue.snippet ?? null,
+          fixedCode: issue.fixedCode ?? null,
         }));
     },
     [reviewIssuesForFile]
@@ -464,7 +510,7 @@ function FileBlock({
                         newLineNumber: lineNum,
                       };
                       const highlighted = isTargetFile && scrollToLine != null && lineNum === scrollToLine;
-                      const lineIssues = getIssuesForLine(lineNum);
+                      const lineIssues = getIssuesForLine(lineNum, content);
                       const lineKey = `${file.path}:${lineNum}`;
                       return <DiffLine key={lineNum} line={syntheticLine} showOld showNew lineId={lineId} highlighted={highlighted} language={language} resolvedTheme={theme} lineIssues={lineIssues.length ? lineIssues : undefined} lineKey={lineKey} isExpanded={expandedLineKey === lineKey} onExpandedChange={(open) => onExpandedLineChange?.(open ? lineKey : null)} />;
                     })}
@@ -487,7 +533,7 @@ function FileBlock({
                       const lineNum = line.newLineNumber ?? line.oldLineNumber ?? li;
                       const lineId = `diff-line-${safeId(file.path)}-${lineNum}`;
                       const highlighted = isTargetFile && scrollToLine != null && lineNum === scrollToLine;
-                      const lineIssues = getIssuesForLine(lineNum);
+                      const lineIssues = getIssuesForLine(lineNum, line.content);
                       const lineKey = `${file.path}:${lineNum}`;
                       return <DiffLine key={`${hi}-${li}`} line={line} showOld={line.type !== "add"} showNew={line.type !== "del"} lineId={lineId} highlighted={highlighted} language={language} resolvedTheme={theme} lineIssues={lineIssues.length ? lineIssues : undefined} lineKey={lineKey} isExpanded={expandedLineKey === lineKey} onExpandedChange={(open) => onExpandedLineChange?.(open ? lineKey : null)} />;
                     })}

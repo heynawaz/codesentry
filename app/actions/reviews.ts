@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { createReview } from "@/lib/reviews";
 import { prisma } from "@/lib/db/client";
 import { getPullRequestDiff } from "@/services/github";
+import { revalidatePath } from "next/cache";
 
 export type RunReviewResult = { ok: true; reviewId: string; qualityScore: number } | { ok: false; error: string };
 
@@ -32,6 +33,7 @@ export async function runReviewAction(pullRequestId: string): Promise<RunReviewR
       prDescription: null,
       techStack: null,
     });
+    revalidatePath(`/dashboard/repositories/${pr.repositoryId}/pr/${pr.id}`);
     return { ok: true, reviewId: review.id, qualityScore: review.qualityScore };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Review failed";

@@ -90,6 +90,10 @@
   --diff-del-fg: #cf222e;
   --diff-hunk-bg: #ddf4ff;
   --diff-hunk-border: #54aeff33;
+  /* Highlight for lines with AI review issues (overlay on diff line) */
+  --diff-issue-high-bg: rgba(239, 68, 68, 0.2);
+  --diff-issue-medium-bg: rgba(245, 158, 11, 0.2);
+  --diff-issue-low-bg: rgba(100, 116, 139, 0.15);
 }
 
 .dark {
@@ -135,6 +139,9 @@
   --diff-del-fg: #f85149;
   --diff-hunk-bg: rgba(56, 139, 253, 0.15);
   --diff-hunk-border: rgba(56, 139, 253, 0.3);
+  --diff-issue-high-bg: rgba(248, 113, 113, 0.25);
+  --diff-issue-medium-bg: rgba(251, 191, 36, 0.2);
+  --diff-issue-low-bg: rgba(148, 163, 184, 0.15);
 }
 
 @layer base {

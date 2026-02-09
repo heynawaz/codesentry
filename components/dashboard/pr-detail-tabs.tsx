@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
@@ -45,6 +45,7 @@ type Issue = {
   lineStart: number | null;
   lineEnd: number | null;
   snippet: string | null;
+  fixedCode?: string | null;
 };
 
 type Review = {
@@ -67,11 +68,15 @@ type PRDetailTabsProps = {
   githubPrId: number;
   headRef: string | null;
   parsedFiles: ParsedFile[];
+  defaultTab?: string;
   latestReview: Review;
 };
 
-export function PRDetailTabs({ repoFullName, githubPrId, headRef, parsedFiles, latestReview }: PRDetailTabsProps) {
-  const [activeTab, setActiveTab] = useState("files");
+export function PRDetailTabs({ repoFullName, githubPrId, headRef, parsedFiles, defaultTab = "files", latestReview }: PRDetailTabsProps) {
+  const [activeTab, setActiveTab] = useState(defaultTab);
+  useEffect(() => {
+    setActiveTab(defaultTab);
+  }, [defaultTab]);
   const [scrollToFilePath, setScrollToFilePath] = useState<string | null>(null);
   const [scrollToLine, setScrollToLine] = useState<number | null>(null);
   const [changeType, setChangeType] = useState<ChangeTypeFilter>("all");
@@ -98,6 +103,8 @@ export function PRDetailTabs({ repoFullName, githubPrId, headRef, parsedFiles, l
       title: i.title,
       description: i.description,
       suggestion: i.suggestion,
+      snippet: (i as { snippet?: string | null }).snippet ?? null,
+      fixedCode: (i as { fixedCode?: string | null }).fixedCode ?? null,
     }));
   }, [latestReview]);
 

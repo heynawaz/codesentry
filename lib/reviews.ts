@@ -62,6 +62,7 @@ export async function createReview(input: CreateReviewInput): Promise<CreateRevi
       lineStart: null as number | null,
       lineEnd: null as number | null,
       snippet: null as string | null,
+      fixedCode: null as string | null,
     })),
     ...inlineDb.map((i) => ({
       kind: i.kind,
@@ -73,7 +74,8 @@ export async function createReview(input: CreateReviewInput): Promise<CreateRevi
       filePath: i.filePath,
       lineStart: i.lineStart,
       lineEnd: i.lineEnd,
-      snippet: null as string | null,
+      snippet: i.snippet ?? null,
+      fixedCode: i.fixedCode ?? null,
     })),
   ];
 

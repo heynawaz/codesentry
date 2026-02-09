@@ -72,18 +72,42 @@ export async function listPullRequests(userId: string, owner: string, repo: stri
 }
 
 export async function getPullRequestDiff(userId: string, owner: string, repo: string, pullNumber: number): Promise<string> {
-  const [client, token] = await Promise.all([getClient(userId), getToken(userId)]);
-  const pr = await client.get<{ diff_url: string }>(`/repos/${owner}/${repo}/pulls/${pullNumber}`);
-  const diffUrl = pr.diff_url?.replace("https://api.github.com", GITHUB_API);
-  if (!diffUrl) throw new Error("No diff URL");
-  const res = await fetch(diffUrl, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/vnd.github.v3.diff",
-    },
-  });
-  if (!res.ok) throw new Error(`Failed to fetch diff: ${res.status}`);
-  return res.text();
+  const { diff } = await getPullRequestForReview(userId, owner, repo, pullNumber);
+  return diff;
+}
+
+/** Fetches PR diff and body for AI review. Body is used to understand PR context and intent. */
+export async function getPullRequestForReview(
+  userId: string,
+  owner: string,
+  repo: string,
+  pullNumber: number
+): Promise<{ diff: string; body: string | null }> {
+  const token = await getToken(userId);
+  const prPath = `/repos/${owner}/${repo}/pulls/${pullNumber}`;
+  // Fetch PR (JSON) and diff (raw) in parallel. Use API endpoint for both — diff_url can point to github.com and return HTML.
+  const [prRes, diffRes] = await Promise.all([
+    fetch(`${GITHUB_API}${prPath}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github.v3+json",
+      },
+    }),
+    fetch(`${GITHUB_API}${prPath}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github.v3.diff",
+      },
+    }),
+  ]);
+  if (!prRes.ok) {
+    const text = await prRes.text();
+    throw new Error(`GitHub API ${prRes.status}: ${text}`);
+  }
+  if (!diffRes.ok) throw new Error(`Failed to fetch diff: ${diffRes.status}`);
+  const pr = (await prRes.json()) as { body: string | null };
+  const diff = await diffRes.text();
+  return { diff, body: pr.body ?? null };
 }
 
 /** Fetch raw file content at the given ref (branch or sha). Returns null if not a file or not found. */

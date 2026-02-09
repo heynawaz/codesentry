@@ -37,11 +37,12 @@ export async function runReviewStrict(input: ReviewRunnerInput): Promise<ReviewR
   });
 
   const client = await getAIClient();
+  // Use gpt-4o for better accuracy when OPENAI_REVIEW_MODEL is set; gpt-4o-mini is faster but less precise
   const model = process.env.OPENAI_REVIEW_MODEL ?? "gpt-4o-mini";
   const { content, usage } = await client.complete(systemPrompt, userPrompt, {
     model,
     maxTokens: 8192,
-    temperature: 0.2,
+    temperature: 0.1, // Lower for more consistent, factual output
   });
 
   const output = validateReviewResponse(content);

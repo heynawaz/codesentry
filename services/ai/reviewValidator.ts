@@ -58,14 +58,18 @@ function parseInlineIssue(raw: unknown): InlineIssue | null {
   if (!message) return null;
   const endLine =
     o.endLine != null && typeof o.endLine === "number" && !Number.isNaN(o.endLine) ? o.endLine : null;
+  const snippet = o.snippet != null && typeof o.snippet === "string" ? o.snippet : null;
+  const fixedCode = o.fixedCode != null && typeof o.fixedCode === "string" ? o.fixedCode : null;
   return {
     file,
     startLine,
     endLine: endLine != null && endLine >= startLine ? endLine : null,
     category: typeof o.category === "string" ? o.category : "General",
     severity: isSeverity(o.severity) ? o.severity : "medium",
+    snippet: snippet ?? undefined,
     message,
     suggestion: typeof o.suggestion === "string" ? o.suggestion : "",
+    fixedCode: fixedCode ?? undefined,
   };
 }
 

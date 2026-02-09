@@ -65,13 +65,13 @@ export function ReviewScoresChart({
   if (data.length === 0) return null;
 
   return (
-    <Card className={cn("overflow-hidden border-border/80", className)}>
+    <Card className={cn("border-border/80 overflow-visible", className)}>
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold">Scores</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[220px] w-full">
-          <BarChart data={data} layout="vertical" margin={{ left: 0, right: 44 }}>
+        <ChartContainer config={chartConfig} className="h-[220px] w-full min-w-0 overflow-visible">
+          <BarChart data={data} layout="vertical" margin={{ left: 0, right: 56 }}>
             <XAxis type="number" domain={[0, 100]} hide />
             <YAxis
               type="category"
@@ -91,6 +91,7 @@ export function ReviewScoresChart({
                 position="right"
                 formatter={(value: number) => `${value}/100`}
                 className="fill-muted-foreground text-xs font-medium tabular-nums"
+                style={{ overflow: "visible" }}
               />
             </Bar>
           </BarChart>

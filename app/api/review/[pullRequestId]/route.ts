@@ -5,7 +5,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/client";
-import { getPullRequestDiff } from "@/services/github";
+import { getPullRequestForReview } from "@/services/github";
 import { createReview } from "@/lib/reviews";
 import { NextResponse } from "next/server";
 
@@ -64,10 +64,13 @@ export async function POST(
   }
 
   let diff: string;
+  let prBody: string | null = null;
   try {
-    diff = await getPullRequestDiff(session.user.id, owner, name, pr.githubPrId);
+    const { diff: fetchedDiff, body } = await getPullRequestForReview(session.user.id, owner, name, pr.githubPrId);
+    diff = fetchedDiff;
+    prBody = body;
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Failed to fetch diff";
+    const message = e instanceof Error ? e.message : "Failed to fetch PR or diff";
     return NextResponse.json({ error: message }, { status: 502 });
   }
 
@@ -76,7 +79,7 @@ export async function POST(
       pullRequestId: pr.id,
       diff,
       prTitle: pr.title,
-      prDescription: null,
+      prDescription: prBody,
       techStack: null,
     });
 

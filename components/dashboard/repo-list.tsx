@@ -55,15 +55,7 @@ export function RepoList({ repos }: { repos: RepoWithCount[] }) {
                       </Badge>
                     </Link>
                   </TableCell>
-                  <TableCell className="px-4 py-4 text-center text-sm tabular-nums align-middle">
-                    {repo.lastScannedAt ? (
-                      <span className="text-muted-foreground">
-                        {formatDate(repo.lastScannedAt)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground/70 italic">Never</span>
-                    )}
-                  </TableCell>
+                  <TableCell className="px-4 py-4 text-center text-sm tabular-nums align-middle">{repo.lastScannedAt ? <span className="text-muted-foreground">{formatDate(repo.lastScannedAt)}</span> : <span className="text-muted-foreground/70 italic">Never</span>}</TableCell>
                   <TableCell className="px-4 py-4 text-center align-middle">
                     <form action={disconnectRepoAction} className="inline-flex justify-center">
                       <input type="hidden" name="repositoryId" value={repo.id} />
