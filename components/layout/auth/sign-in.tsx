@@ -1,5 +1,6 @@
 import { auth, signIn } from "@/auth";
 import { SignInButton } from "@/components/layout/auth/sign-in-button";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { ArrowRight, FileCode2, MessageSquare, Shield, Sparkles } from "lucide-react";
 import { redirect } from "next/navigation";
 
@@ -65,6 +66,9 @@ export default async function SignIn() {
 
       {/* Right: Sign-in panel */}
       <main className="relative flex flex-col items-center justify-center bg-background p-6 sm:p-8 lg:border-l lg:border-border/40 lg:p-12">
+        <div className="absolute right-4 top-4 lg:right-6 lg:top-6">
+          <ThemeToggle />
+        </div>
         <div className="w-full max-w-[400px]">
           <div className="space-y-6">
             <div className="space-y-1.5">

@@ -79,6 +79,21 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* GitHub-style PR diff colors (light) */
+  --diff-add-bg: #e6ffed;
+  --diff-add-num-bg: #ccffd8;
+  --diff-add-border: #abf2bc;
+  --diff-del-bg: #ffebe9;
+  --diff-del-num-bg: #ffd7d5;
+  --diff-del-border: #ffc2c2;
+  --diff-add-fg: #1a7f37;
+  --diff-del-fg: #cf222e;
+  --diff-hunk-bg: #ddf4ff;
+  --diff-hunk-border: #54aeff33;
+  /* Highlight for lines with AI review issues (overlay on diff line) */
+  --diff-issue-high-bg: rgba(239, 68, 68, 0.2);
+  --diff-issue-medium-bg: rgba(245, 158, 11, 0.2);
+  --diff-issue-low-bg: rgba(100, 116, 139, 0.15);
 }
 
 .dark {
@@ -113,6 +128,20 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  /* GitHub-style PR diff colors (dark) */
+  --diff-add-bg: rgba(46, 160, 67, 0.15);
+  --diff-add-num-bg: rgba(46, 160, 67, 0.25);
+  --diff-add-border: rgba(46, 160, 67, 0.4);
+  --diff-del-bg: rgba(248, 81, 73, 0.15);
+  --diff-del-num-bg: rgba(248, 81, 73, 0.25);
+  --diff-del-border: rgba(248, 81, 73, 0.4);
+  --diff-add-fg: #3fb950;
+  --diff-del-fg: #f85149;
+  --diff-hunk-bg: rgba(56, 139, 253, 0.15);
+  --diff-hunk-border: rgba(56, 139, 253, 0.3);
+  --diff-issue-high-bg: rgba(248, 113, 113, 0.25);
+  --diff-issue-medium-bg: rgba(251, 191, 36, 0.2);
+  --diff-issue-low-bg: rgba(148, 163, 184, 0.15);
 }
 
 @layer base {
@@ -121,5 +150,6 @@
   }
   body {
     @apply bg-background text-foreground;
+    @apply transition-colors duration-200;
   }
 }
