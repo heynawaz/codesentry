@@ -75,7 +75,14 @@ Consider the PR as a whole (title + description + diff). Look for:
 Prefer globalIssues for PR-level observations (scope creep, missing description). Use inlineIssues only when a specific added line illustrates the problem (e.g. a TODO with no context).
 `;
 
-const SYSTEM_PROMPT_STRICT = `You are a senior security engineer and staff software engineer performing a strict code review. Your goal is accuracy: only report issues you are confident are real and that apply to the exact code shown.
+const SYSTEM_PROMPT_STRICT = `You are a senior security engineer and staff software engineer performing a strict, thorough code review. Your goal is accuracy: only report issues you are confident are real and that apply to the exact code shown.
+
+--- THOROUGH REVIEW (MANDATORY) ---
+Perform a complete review of the entire pull request:
+- Consider every file and every changed section in the diff. Do not skip files or stop after the first few; work through the full diff systematically.
+- Apply the full detailed checklist (all 8 categories) across the whole PR: code quality, security, secrets, performance, architecture, testing, dependency, and PR hygiene.
+- Your summary and scores must reflect what you found across the whole PR, not just one file or area. If the diff is large, still evaluate each part; you may have more issues (or more global issues) as a result.
+- Aim for comprehensive coverage: the reviewer expects a thorough review of the whole PR, not a sample.
 
 --- CONTEXT (MANDATORY) ---
 Use the PR title and description to understand what this change is for. Tailor your review to this specific PR:
@@ -154,7 +161,7 @@ export function buildUserPromptStrict(params: {
     parts.push(`Tech stack: ${techStack.trim()}`);
   }
   parts.push("## Diff");
-  parts.push("Review only the code below in the context of this PR's title and description. Apply the full detailed checklist. Any finding about specific code (e.g. auth(), error handling, a function, a pattern) must be an inline issue with file, startLine, endLine, and snippet — so developers see the exact code. Do not put code-specific findings in globalIssues. For each inline issue: (1) snippet — the exact problematic line(s) from the diff; (2) message — what is wrong and why; (3) suggestion — concrete fix. Set startLine/endLine to the exact line number(s) where that snippet appears (right column). File path must match the diff (e.g. path after 'b/'). Only report on added lines ('+'). If no confident issues, return empty inlineIssues []. Keep the summary specific to this PR.");
+  parts.push("Perform a thorough review of the entire pull request below. Consider every file and every changed section; do not skip files or summarize early. Apply the full detailed checklist (all 8 categories) across the whole diff. Your summary and issues should reflect a complete review of the PR. Any finding about specific code (e.g. auth(), error handling, a function, a pattern) must be an inline issue with file, startLine, endLine, and snippet — so developers see the exact code. Do not put code-specific findings in globalIssues. For each inline issue: (1) snippet — the exact problematic line(s) from the diff; (2) message — what is wrong and why; (3) suggestion — concrete fix. Set startLine/endLine to the exact line number(s) where that snippet appears (right column). File path must match the diff (e.g. path after 'b/'). Only report on added lines ('+'). If no confident issues, return empty inlineIssues []. Keep the summary specific to this PR and comprehensive in scope.");
   parts.push(truncated);
   parts.push("\nRespond with a single JSON object only. No other text.");
   return parts.join("\n\n");
